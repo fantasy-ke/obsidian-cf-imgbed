@@ -3,7 +3,7 @@
 	"name": "CF ImageBed",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "上传图片到 CloudFlare ImgBed 的 插件，支持拖拽、粘贴和选择文件上传。",
+	"description": "Upload images to CloudFlare ImgBed's Obsidian plugin, which supports drag and drop, paste and select file uploads.",
 	"author": "fantasy-ke",
 	"authorUrl": "https://github.com/fantasy-ke",
 	"fundingUrl": "https://github.com/fantasy-ke",
