@@ -1,7 +1,7 @@
 {
 	"name": "CF-ImageBed",
 	"version": "1.0.0",
-	"description": "Upload images to CloudFlare ImgBed's Obsidian plugin, which supports drag and drop, paste and select file uploads.",
+	"description": "Upload images to CloudFlare ImgBed's plugin, which supports drag and drop, paste and select file uploads.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
