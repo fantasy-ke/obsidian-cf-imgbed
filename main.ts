@@ -19,15 +19,6 @@ export default class CFImageBedPlugin extends Plugin {
 		this.imageHandler = new ImageHandler(this.app, this.uploadService);
 		this.eventHandlers = new EventHandlers(this.imageHandler);
 
-		// 添加上传图片命令
-		this.addCommand({
-			id: 'upload-image',
-			name: '上传图片到 CF ImageBed',
-			editorCallback: (editor: Editor, _view: MarkdownView) => {
-				this.imageHandler.selectAndUploadImage();
-			}
-		});
-
 		// 注册事件处理器
 		this.eventHandlers.registerDragAndDropEvents(this);
 		this.eventHandlers.registerPasteEvents(this);
