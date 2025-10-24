@@ -24,6 +24,16 @@ export default class CFImageBedPlugin extends Plugin {
 		this.eventHandlers.registerPasteEvents(this);
 		this.eventHandlers.registerEditorMenuEvents(this);
 
+		// 移动端专用命令：支持相机拍照和相册选择
+		this.addCommand({
+			id: 'upload-image-mobile',
+			name: '📷 拍照或相册选择',
+			icon: 'camera',
+			callback: () => {
+				this.imageHandler.selectImageForMobile();
+			}
+		});
+
 		// 添加设置页面
 		this.addSettingTab(new CFImageBedSettingTab(this.app, this));
 	}
