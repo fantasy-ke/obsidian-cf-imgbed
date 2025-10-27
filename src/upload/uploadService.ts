@@ -1,5 +1,7 @@
 import { Notice } from 'obsidian';
 import { CFImageBedSettings } from '../types';
+import { ClientCompressor } from '../utils/clientCompressor';
+import { ClientWatermark } from '../utils/clientWatermark';
 
 export class UploadService {
 	constructor(private settings: CFImageBedSettings) {}
@@ -11,8 +13,51 @@ export class UploadService {
 		}
 
 		try {
+			// 检查文件类型
+			if (!this.isAllowedFileType(file)) {
+				new Notice(`不支持的文件类型: ${file.type}`);
+				return null;
+			}
+
+			// 检查文件大小
+			if (!this.isFileSizeAllowed(file)) {
+				new Notice(`文件大小超过限制: ${ClientCompressor.formatFileSize(file.size)}`);
+				return null;
+			}
+
+			// 客户端处理（水印 + 压缩）
+			let processedFile = file;
+			
+			// 1. 添加水印
+			if (this.settings.enableWatermark && ClientWatermark.isWatermarkable(file)) {
+				console.log('CF ImageBed: 开始添加水印');
+				processedFile = await ClientWatermark.addWatermark(
+					processedFile,
+					this.settings.watermarkText,
+					this.settings.watermarkPosition,
+					this.settings.watermarkSize,
+					this.settings.watermarkOpacity
+				);
+			}
+			
+			// 2. 客户端压缩
+			if (this.settings.enableClientCompress && ClientCompressor.isCompressible(processedFile)) {
+				console.log('CF ImageBed: 开始客户端压缩处理');
+				processedFile = await ClientCompressor.compressImage(
+					processedFile, 
+					this.settings.targetSize, 
+					this.settings.compressThreshold
+				);
+				
+				// 显示压缩结果
+				const originalSize = ClientCompressor.formatFileSize(file.size);
+				const processedSize = ClientCompressor.formatFileSize(processedFile.size);
+				console.log(`CF ImageBed: 处理完成 - 原始: ${originalSize}, 处理后: ${processedSize}`);
+			}
+
+			// 创建上传参数
 			const formData = new FormData();
-			formData.append('file', file);
+			formData.append('file', processedFile);
 
 			const params = new URLSearchParams({
 				authCode: this.settings.authCode,
@@ -27,6 +72,7 @@ export class UploadService {
 				params.append('uploadFolder', this.settings.uploadFolder);
 			}
 
+			// 上传文件
 			const response = await fetch(`${this.settings.apiUrl}/upload?${params}`, {
 				method: 'POST',
 				body: formData
@@ -55,5 +101,21 @@ export class UploadService {
 			new Notice(`图片上传失败: ${error.message}`);
 			return null;
 		}
+	}
+
+	/**
+	 * 检查文件类型是否允许
+	 */
+	private isAllowedFileType(file: File): boolean {
+		const extension = file.name.split('.').pop()?.toLowerCase();
+		return extension ? this.settings.allowedFileTypes.includes(extension) : false;
+	}
+
+	/**
+	 * 检查文件大小是否允许
+	 */
+	private isFileSizeAllowed(file: File): boolean {
+		const maxSizeBytes = this.settings.maxFileSize * 1024 * 1024;
+		return file.size <= maxSizeBytes;
 	}
 }
