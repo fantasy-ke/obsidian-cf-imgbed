@@ -32,10 +32,6 @@ export interface CFImageBedSettings {
 	// 备份配置
 	enableLocalBackup: boolean;
 	backupPath: string;
-	
-	// 快捷键配置
-	enableHotkey: boolean;
-	hotkey: string;
 }
 
 export const DEFAULT_SETTINGS: CFImageBedSettings = {
@@ -64,16 +60,13 @@ export const DEFAULT_SETTINGS: CFImageBedSettings = {
 	targetSize: 1, // 1MB
 	
 	// 用户体验配置
-	showUploadProgress: false,
+	showUploadProgress: true,
 	showSuccessNotification: true,
-	showErrorNotification: false,
+	showErrorNotification: true,
 	notificationDuration: 5,
 	
 	// 备份配置
 	enableLocalBackup: false,
-	backupPath: '',
-	
-	// 快捷键配置
-	enableHotkey: false,
-	hotkey: 'Ctrl+Shift+U'
+	backupPath: 'attachments/backup',
+
 };

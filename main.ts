@@ -16,7 +16,7 @@ export default class CFImageBedPlugin extends Plugin {
 
 		// 初始化服务
 		this.uploadService = new UploadService(this.settings);
-		this.imageHandler = new ImageHandler(this.app, this.uploadService);
+		this.imageHandler = new ImageHandler(this.app, this.uploadService, () => this.settings);
 		this.eventHandlers = new EventHandlers(this.imageHandler);
 
 		// 注册事件处理器
@@ -41,6 +41,8 @@ export default class CFImageBedPlugin extends Plugin {
 	onunload() {
 
 	}
+
+
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());

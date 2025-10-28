@@ -202,6 +202,15 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.enableWatermark = value;
 					await this.plugin.saveSettings();
+					// 不刷新页面，通过控件的 disabled 逻辑生效
+					const fields = container.querySelectorAll('input, select');
+					fields.forEach((el: any) => {
+						const label = (el.closest('.setting-item')?.querySelector('.setting-item-name')?.textContent || '').trim();
+						const dependent = ['水印文字','水印位置','水印字体大小','水印透明度'];
+						if (dependent.some(d => label.includes(d))) {
+							el.disabled = !value;
+						}
+					});
 				}));
 
 		// 水印文字
@@ -271,6 +280,15 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.enableClientCompress = value;
 					await this.plugin.saveSettings();
+					// 不刷新页面，直接切换阈值与目标大小的禁用状态
+					const fields = container.querySelectorAll('input');
+					fields.forEach((el: any) => {
+						const label = (el.closest('.setting-item')?.querySelector('.setting-item-name')?.textContent || '').trim();
+						const dependent = ['压缩阈值','期望大小'];
+						if (dependent.some(d => label.includes(d))) {
+							el.disabled = !value;
+						}
+					});
 				}));
 
 		// 压缩阈值
@@ -305,8 +323,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 	private createUserExperienceSettings(container: HTMLElement): void {
 		// 显示上传进度
 		new Setting(container)
-			.setName('显示上传进度')
-			.setDesc('在上传过程中显示进度条')
+			.setName('显示上传提示')
+			.setDesc('在上传过程中显示提示信息')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showUploadProgress)
 				.onChange(async (value) => {
@@ -349,29 +367,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		// 快捷键设置
-		new Setting(container)
-			.setName('启用快捷键')
-			.setDesc('启用快捷键快速上传图片')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.enableHotkey)
-				.onChange(async (value) => {
-					this.plugin.settings.enableHotkey = value;
-					await this.plugin.saveSettings();
-				}));
-
-		// 快捷键
-		new Setting(container)
-			.setName('快捷键')
-			.setDesc('设置上传图片的快捷键')
-			.addText(text => text
-				.setPlaceholder('Ctrl+Shift+U')
-				.setValue(this.plugin.settings.hotkey)
-				.setDisabled(!this.plugin.settings.enableHotkey)
-				.onChange(async (value) => {
-					this.plugin.settings.hotkey = value;
-					await this.plugin.saveSettings();
-				}));
+		// 快捷键设置已移除
 	}
 	
 	private createBackupSettings(container: HTMLElement): void {
@@ -384,6 +380,9 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.enableLocalBackup = value;
 					await this.plugin.saveSettings();
+					// 不刷新页面，直接切换备份路径输入框
+					const input = container.querySelector('input');
+					if (input) input.disabled = !value;
 				}));
 
 		// 备份路径

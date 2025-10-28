@@ -1,4 +1,4 @@
-import { Notice } from 'obsidian';
+import { Notice, TFolder, normalizePath } from 'obsidian';
 import { CFImageBedSettings } from '../types';
 import { ClientCompressor } from '../utils/clientCompressor';
 import { ClientWatermark } from '../utils/clientWatermark';
@@ -84,6 +84,14 @@ export class UploadService {
 
 			const result = await response.json();
 			if (result && result[0] && result[0].src) {
+				// 可选：本地备份
+				if (this.settings.enableLocalBackup && this.settings.backupPath?.trim()) {
+					try {
+						await this.saveLocalBackup(processedFile, this.settings.backupPath);
+					} catch (e) {
+						console.warn('本地备份失败:', e);
+					}
+				}
 				// 根据返回格式设置决定是否拼接URL
 				if (this.settings.returnFormat === 'full') {
 					// 完整链接格式，直接返回
@@ -98,8 +106,30 @@ export class UploadService {
 			}
 		} catch (error) {
 			console.error('图片上传失败:', error);
-			new Notice(`图片上传失败: ${error.message}`);
+			if (this.settings.showErrorNotification) {
+				new Notice(`图片上传失败: ${error.message}`, (this.settings.notificationDuration ?? 5) * 1000);
+			}
 			return null;
+		}
+	}
+
+	private async saveLocalBackup(file: File, backupPath: string): Promise<void> {
+		// Obsidian 的 app 对象在此不可直接访问；通过 window.app 使用
+		const app: any = (window as any).app;
+		if (!app?.vault) throw new Error('无法访问 Obsidian vault');
+		const normalized = normalizePath(backupPath);
+		const arrayBuffer = await file.arrayBuffer();
+		// 确保文件夹存在
+		try {
+			await app.vault.createFolder(normalized);
+		} catch {}
+		const targetFilePath = normalizePath(`${normalized}/${file.name}`);
+		// 如果存在则覆盖
+		const existing = app.vault.getAbstractFileByPath(targetFilePath);
+		if (existing) {
+			await app.vault.modifyBinary(existing, arrayBuffer);
+		} else {
+			await app.vault.createBinary(targetFilePath, arrayBuffer);
 		}
 	}
 

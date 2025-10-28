@@ -1,11 +1,13 @@
 import { App, MarkdownView, Notice } from 'obsidian';
+import { CFImageBedSettings } from '../types';
 import { UploadService } from './uploadService';
 
 export class ImageHandler {
-	constructor(
-		private app: App,
-		private uploadService: UploadService
-	) {}
+    constructor(
+        private app: App,
+        private uploadService: UploadService,
+        private getSettings?: () => CFImageBedSettings
+    ) {}
 
 	async uploadImageFromFile(file: File, deleteLocal: boolean = false): Promise<void> {
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -14,7 +16,10 @@ export class ImageHandler {
 			return;
 		}
 
-		new Notice('正在上传图片...');
+        const settings = this.getSettings?.();
+        if (settings?.showUploadProgress) {
+            new Notice('正在上传图片...');
+        }
 		const imageUrl = await this.uploadService.uploadImage(file);
 		
 		if (imageUrl) {
@@ -22,7 +27,9 @@ export class ImageHandler {
 			const cursor = editor.getCursor();
 			const markdownImage = `![${file.name}](${imageUrl})`;
 			editor.replaceRange(markdownImage, cursor);
-			new Notice(`图片上传成功：${imageUrl}`, 5000);
+            if (settings?.showSuccessNotification) {
+                new Notice(`图片上传成功：${imageUrl}`, (settings.notificationDuration ?? 5) * 1000);
+            }
 		}
 	}
 
@@ -33,7 +40,10 @@ export class ImageHandler {
 			return;
 		}
 
-		new Notice('正在上传图片...');
+        const settings = this.getSettings?.();
+        if (settings?.showUploadProgress) {
+            new Notice('正在上传图片...');
+        }
 		const imageUrl = await this.uploadService.uploadImage(file);
 		
 		if (imageUrl) {
@@ -41,7 +51,9 @@ export class ImageHandler {
 			const cursor = editor.getCursor();
 			const markdownImage = `![${file.name}](${imageUrl})`;
 			editor.replaceRange(markdownImage, cursor);
-			new Notice(`图片上传成功：${imageUrl}`, 5000);
+            if (settings?.showSuccessNotification) {
+                new Notice(`图片上传成功：${imageUrl}`, (settings.notificationDuration ?? 5) * 1000);
+            }
 		}
 	}
 
