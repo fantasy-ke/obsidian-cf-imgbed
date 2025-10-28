@@ -117,7 +117,23 @@
 ## 版本更新历史
 
 <details>
-<summary><strong>v1.0.3 (最新版本)</strong></summary>
+<summary><strong>v1.0.4 (最新版本)</strong></summary>
+
+### 新功能与优化
+- feat: 添加水印和压缩功能，优化设置界面和验证逻辑
+
+#### 详细变更
+- 新增水印和压缩处理的客户端功能
+- 增加设置验证逻辑，确保配置有效性
+- 优化设置界面，增加选项卡和样式
+- 更新类型定义，包含新配置项
+- 添加文件类型和大小验证
+- 实现文件上传前的水印和压缩处理
+
+</details>
+
+<details>
+<summary><strong>v1.0.3</strong></summary>
 
 ### 新增功能
 - **移动端支持**：完整的 Android/iOS 设备支持

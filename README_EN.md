@@ -117,7 +117,23 @@ For detailed API documentation, please refer to CloudFlare ImgBed official [docu
 ## Version History
 
 <details>
-<summary><strong>v1.0.3 (Latest)</strong></summary>
+<summary><strong>v1.0.4 (Latest)</strong></summary>
+
+### Features & Improvements
+- feat: Add watermark and compression features; enhance settings UI and validation
+
+#### Detailed Changes
+- New client-side watermark and compression processing
+- Added settings validation to ensure configuration correctness
+- Optimized settings UI with tabs and styles
+- Updated type definitions to include new configuration items
+- Added file type and size validation
+- Perform watermark and compression before upload
+
+</details>
+
+<details>
+<summary><strong>v1.0.3</strong></summary>
 
 ### New Features
 - **Mobile Support**: Full Android/iOS device support
