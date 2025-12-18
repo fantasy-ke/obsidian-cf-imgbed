@@ -1,10 +1,10 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { CFImageBedSettings } from '../types';
+import { App, PluginSettingTab, Setting } from 'obsidian';
+import CFImageBedPlugin from '../../main';
 
 export class CFImageBedSettingTab extends PluginSettingTab {
-	plugin: Plugin;
+	plugin: CFImageBedPlugin;
 
-	constructor(app: App, plugin: Plugin) {
+	constructor(app: App, plugin: CFImageBedPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

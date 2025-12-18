@@ -1,4 +1,4 @@
-import { Notice, normalizePath, requestUrl } from 'obsidian';
+import { Notice, normalizePath, requestUrl, TFile, Vault } from 'obsidian';
 import { CFImageBedSettings } from '../types';
 import { ClientCompressor } from '../utils/clientCompressor';
 import { ClientWatermark } from '../utils/clientWatermark';
@@ -119,7 +119,7 @@ export class UploadService {
 			});
 
 			if (response.status !== 200) {
-				throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+				throw new Error(`Upload failed: ${response.status}`);
 			}
 
 			const result = response.json;
@@ -156,7 +156,7 @@ export class UploadService {
 
 	private async saveLocalBackup(file: File, backupPath: string): Promise<void> {
 		// Obsidian 的 app 对象在此不可直接访问；通过 window.app 使用
-		const app = (window as { app?: { vault?: { createFolder: (path: string) => Promise<void>; getAbstractFileByPath: (path: string) => { modifyBinary: (file: { path: string }, data: ArrayBuffer) => Promise<void> } | null; createBinary: (path: string, data: ArrayBuffer) => Promise<void> } } }).app;
+		const app = (window as { app?: { vault?: Vault } }).app;
 		if (!app?.vault) throw new Error('Cannot access Obsidian vault');
 		const normalized = normalizePath(backupPath);
 		const arrayBuffer = await file.arrayBuffer();
@@ -169,7 +169,7 @@ export class UploadService {
 		const targetFilePath = normalizePath(`${normalized}/${file.name}`);
 		// 如果存在则覆盖
 		const existing = app.vault.getAbstractFileByPath(targetFilePath);
-		if (existing) {
+		if (existing && existing instanceof TFile) {
 			await app.vault.modifyBinary(existing, arrayBuffer);
 		} else {
 			await app.vault.createBinary(targetFilePath, arrayBuffer);
