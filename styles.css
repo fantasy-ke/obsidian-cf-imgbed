@@ -1,10 +1,8 @@
 /*
-
 This CSS file will be included with your plugin, and
 available in the app when your plugin is enabled.
 
 If your plugin does not need CSS, delete this file.
-
 */
 
 /* CF ImageBed 插件专用样式 - 限制作用域避免影响全局 */
@@ -281,3 +279,4 @@ If your plugin does not need CSS, delete this file.
 	background-color: #f8f9fa;
 	border-color: #dee2e6;
 }
+

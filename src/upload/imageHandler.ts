@@ -1,12 +1,14 @@
 import { App, MarkdownView, Notice, Platform } from 'obsidian';
 import { CFImageBedSettings } from '../types';
 import { UploadService } from './uploadService';
+import { I18n } from '../utils/i18n';
 
 export class ImageHandler {
     constructor(
         private app: App,
         private uploadService: UploadService,
-        private getSettings?: () => CFImageBedSettings
+        private getSettings?: () => CFImageBedSettings,
+        private i18n?: I18n
     ) {}
 
 	async uploadImageFromFile(file: File, deleteLocal: boolean = false): Promise<void> {
@@ -106,22 +108,22 @@ export class ImageHandler {
 		dialog.className = 'cf-imagebed-dialog';
 
 		const title = document.createElement('h3');
-		title.textContent = 'Select image source';
+		title.textContent = this.i18n?.t('mobile.selectSource') || 'Select image source';
 		title.className = 'cf-imagebed-dialog-title';
 
 		const buttonContainer = document.createElement('div');
 		buttonContainer.className = 'cf-imagebed-button-container';
 
 		const cameraBtn = document.createElement('button');
-		cameraBtn.textContent = '📷 Take photo';
+		cameraBtn.textContent = this.i18n?.t('mobile.takePhoto') || '📷 Take photo';
 		cameraBtn.className = 'cf-imagebed-camera-btn';
 
 		const galleryBtn = document.createElement('button');
-		galleryBtn.textContent = '🖼️ Select from gallery';
+		galleryBtn.textContent = this.i18n?.t('mobile.selectFromGallery') || '🖼️ Select from gallery';
 		galleryBtn.className = 'cf-imagebed-gallery-btn';
 
 		const cancelBtn = document.createElement('button');
-		cancelBtn.textContent = 'Cancel';
+		cancelBtn.textContent = this.i18n?.t('mobile.cancel') || 'Cancel';
 		cancelBtn.className = 'cf-imagebed-cancel-btn';
 
 		// 相机拍照

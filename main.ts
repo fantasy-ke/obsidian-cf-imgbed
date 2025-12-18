@@ -4,20 +4,25 @@ import { UploadService } from './src/upload/uploadService';
 import { ImageHandler } from './src/upload/imageHandler';
 import { EventHandlers } from './src/events/eventHandlers';
 import { CFImageBedSettingTab } from './src/settings/settingsTab';
+import { I18n } from './src/utils/i18n';
 
 export default class CFImageBedPlugin extends Plugin {
 	settings: CFImageBedSettings;
 	private uploadService: UploadService;
 	private imageHandler: ImageHandler;
 	private eventHandlers: EventHandlers;
+	private i18n: I18n;
 
 	async onload() {
 		await this.loadSettings();
 
+		// 初始化i18n
+		this.i18n = new I18n(this.settings.language || 'zh');
+
 		// 初始化服务
 		this.uploadService = new UploadService(this.settings);
-		this.imageHandler = new ImageHandler(this.app, this.uploadService, () => this.settings);
-		this.eventHandlers = new EventHandlers(this.imageHandler);
+		this.imageHandler = new ImageHandler(this.app, this.uploadService, () => this.settings, this.i18n);
+		this.eventHandlers = new EventHandlers(this.imageHandler, this.i18n);
 
 		// 注册事件处理器
 		this.eventHandlers.registerDragAndDropEvents(this);

@@ -32,6 +32,9 @@ export interface CFImageBedSettings {
 	// 备份配置
 	enableLocalBackup: boolean;
 	backupPath: string;
+	
+	// 语言配置
+	language: 'zh' | 'en';
 }
 
 export const DEFAULT_SETTINGS: CFImageBedSettings = {
@@ -68,5 +71,8 @@ export const DEFAULT_SETTINGS: CFImageBedSettings = {
 	// 备份配置
 	enableLocalBackup: false,
 	backupPath: 'attachments/backup',
+	
+	// 语言配置
+	language: 'zh',
 
 };

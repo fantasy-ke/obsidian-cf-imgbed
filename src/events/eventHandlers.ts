@@ -1,8 +1,12 @@
 import { Plugin, Menu, Editor, MarkdownView } from 'obsidian';
 import { ImageHandler } from '../upload/imageHandler';
+import { I18n } from '../utils/i18n';
 
 export class EventHandlers {
-	constructor(private imageHandler: ImageHandler) {}
+	constructor(
+		private imageHandler: ImageHandler,
+		private i18n: I18n
+	) {}
 
 	registerDragAndDropEvents(plugin: Plugin): void {
 		// 添加拖拽上传功能
@@ -57,7 +61,7 @@ export class EventHandlers {
 			plugin.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) => {
 				menu.addItem((item) => {
 					item
-						.setTitle('Upload image to CF ImageBed')
+						.setTitle(this.i18n.t('menu.uploadImage'))
 						.setIcon('upload')
 						.onClick(() => {
 							this.imageHandler.selectAndUploadImage();
