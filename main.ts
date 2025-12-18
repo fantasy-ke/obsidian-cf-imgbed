@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Plugin } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { CFImageBedSettings, DEFAULT_SETTINGS } from './src/types';
 import { UploadService } from './src/upload/uploadService';
 import { ImageHandler } from './src/upload/imageHandler';

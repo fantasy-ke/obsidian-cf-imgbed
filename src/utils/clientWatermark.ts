@@ -18,11 +18,11 @@ export class ClientWatermark {
 		opacity: number
 	): Promise<File> {
 		if (!watermarkText.trim()) {
-			console.log('CF ImageBed: 水印文字为空，跳过水印处理');
+			console.debug('CF ImageBed: Watermark text is empty, skipping watermark processing');
 			return file;
 		}
 
-		console.log(`CF ImageBed: 开始添加水印 - 文字: ${watermarkText}, 位置: ${position}`);
+		console.debug(`CF ImageBed: Starting watermark addition - text: ${watermarkText}, position: ${position}`);
 
 		try {
 			// 创建图片对象
@@ -86,7 +86,7 @@ export class ClientWatermark {
 				lastModified: Date.now()
 			});
 
-			console.log('CF ImageBed: 水印添加完成');
+			console.debug('CF ImageBed: Watermark addition complete');
 
 			// 清理资源
 			URL.revokeObjectURL(img.src);

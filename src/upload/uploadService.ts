@@ -1,4 +1,4 @@
-import { Notice, TFolder, normalizePath } from 'obsidian';
+import { Notice, normalizePath, requestUrl } from 'obsidian';
 import { CFImageBedSettings } from '../types';
 import { ClientCompressor } from '../utils/clientCompressor';
 import { ClientWatermark } from '../utils/clientWatermark';
@@ -30,7 +30,7 @@ export class UploadService {
 			
 			// 1. 添加水印
 			if (this.settings.enableWatermark && ClientWatermark.isWatermarkable(file)) {
-				console.log('CF ImageBed: 开始添加水印');
+				console.debug('CF ImageBed: Starting watermark addition');
 				processedFile = await ClientWatermark.addWatermark(
 					processedFile,
 					this.settings.watermarkText,
@@ -42,7 +42,7 @@ export class UploadService {
 			
 			// 2. 客户端压缩
 			if (this.settings.enableClientCompress && ClientCompressor.isCompressible(processedFile)) {
-				console.log('CF ImageBed: 开始客户端压缩处理');
+				console.debug('CF ImageBed: Starting client compression');
 				processedFile = await ClientCompressor.compressImage(
 					processedFile, 
 					this.settings.targetSize, 
@@ -52,13 +52,10 @@ export class UploadService {
 				// 显示压缩结果
 				const originalSize = ClientCompressor.formatFileSize(file.size);
 				const processedSize = ClientCompressor.formatFileSize(processedFile.size);
-				console.log(`CF ImageBed: 处理完成 - 原始: ${originalSize}, 处理后: ${processedSize}`);
+				console.debug(`CF ImageBed: Processing complete - Original: ${originalSize}, Processed: ${processedSize}`);
 			}
 
 			// 创建上传参数
-			const formData = new FormData();
-			formData.append('file', processedFile);
-
 			const params = new URLSearchParams({
 				authCode: this.settings.authCode,
 				uploadChannel: this.settings.uploadChannel,
@@ -72,25 +69,68 @@ export class UploadService {
 				params.append('uploadFolder', this.settings.uploadFolder);
 			}
 
-			// 上传文件
-			const response = await fetch(`${this.settings.apiUrl}/upload?${params}`, {
-				method: 'POST',
-				body: formData
-			});
-
-			if (!response.ok) {
-				throw new Error(`上传失败: ${response.status} ${response.statusText}`);
+			// 构造 multipart/form-data 请求体
+			const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
+			const fileArrayBuffer = await processedFile.arrayBuffer();
+			const fileBytes = new Uint8Array(fileArrayBuffer);
+			
+			// 构建 multipart body
+			const parts: (string | Uint8Array)[] = [];
+			
+			// 文件部分
+			parts.push(`--${boundary}\r\n`);
+			parts.push(`Content-Disposition: form-data; name="file"; filename="${processedFile.name}"\r\n`);
+			parts.push(`Content-Type: ${processedFile.type}\r\n\r\n`);
+			parts.push(fileBytes);
+			parts.push(`\r\n--${boundary}--\r\n`);
+			
+			// 合并所有部分
+			const bodyParts: Uint8Array[] = [];
+			let totalLength = 0;
+			
+			for (const part of parts) {
+				if (typeof part === 'string') {
+					const encoder = new TextEncoder();
+					const encoded = encoder.encode(part);
+					bodyParts.push(encoded);
+					totalLength += encoded.length;
+				} else {
+					bodyParts.push(part);
+					totalLength += part.length;
+				}
+			}
+			
+			// 合并为单个 Uint8Array
+			const body = new Uint8Array(totalLength);
+			let offset = 0;
+			for (const part of bodyParts) {
+				body.set(part, offset);
+				offset += part.length;
 			}
 
-			const result = await response.json();
+			// 上传文件
+			const response = await requestUrl({
+				url: `${this.settings.apiUrl}/upload?${params}`,
+				method: 'POST',
+				body: body.buffer,
+				headers: {
+					'Content-Type': `multipart/form-data; boundary=${boundary}`
+				}
+			});
+
+			if (response.status !== 200) {
+				throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+			}
+
+			const result = response.json;
 			if (result && result[0] && result[0].src) {
 				// 可选：本地备份
 				if (this.settings.enableLocalBackup && this.settings.backupPath?.trim()) {
 					try {
 						await this.saveLocalBackup(processedFile, this.settings.backupPath);
-					} catch (e) {
-						console.warn('本地备份失败:', e);
-					}
+				} catch (e) {
+					console.warn('Local backup failed:', e);
+				}
 				}
 				// 根据返回格式设置决定是否拼接URL
 				if (this.settings.returnFormat === 'full') {
@@ -105,9 +145,10 @@ export class UploadService {
 				throw new Error('服务器返回格式错误');
 			}
 		} catch (error) {
-			console.error('图片上传失败:', error);
+			console.error('Image upload failed:', error);
 			if (this.settings.showErrorNotification) {
-				new Notice(`图片上传失败: ${error.message}`, (this.settings.notificationDuration ?? 5) * 1000);
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				new Notice(`Image upload failed: ${errorMessage}`, (this.settings.notificationDuration ?? 5) * 1000);
 			}
 			return null;
 		}
@@ -115,14 +156,16 @@ export class UploadService {
 
 	private async saveLocalBackup(file: File, backupPath: string): Promise<void> {
 		// Obsidian 的 app 对象在此不可直接访问；通过 window.app 使用
-		const app: any = (window as any).app;
-		if (!app?.vault) throw new Error('无法访问 Obsidian vault');
+		const app = (window as { app?: { vault?: { createFolder: (path: string) => Promise<void>; getAbstractFileByPath: (path: string) => { modifyBinary: (file: { path: string }, data: ArrayBuffer) => Promise<void> } | null; createBinary: (path: string, data: ArrayBuffer) => Promise<void> } } }).app;
+		if (!app?.vault) throw new Error('Cannot access Obsidian vault');
 		const normalized = normalizePath(backupPath);
 		const arrayBuffer = await file.arrayBuffer();
 		// 确保文件夹存在
 		try {
 			await app.vault.createFolder(normalized);
-		} catch {}
+		} catch {
+			// Folder may already exist, ignore error
+		}
 		const targetFilePath = normalizePath(`${normalized}/${file.name}`);
 		// 如果存在则覆盖
 		const existing = app.vault.getAbstractFileByPath(targetFilePath);

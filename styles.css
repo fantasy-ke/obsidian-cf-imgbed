@@ -177,3 +177,107 @@ If your plugin does not need CSS, delete this file.
 		margin-bottom: 0.75rem;
 	}
 }
+
+/* Mobile image selection dialog styles */
+.cf-imagebed-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0,0,0,0.6);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 10000;
+	backdrop-filter: blur(4px);
+}
+
+.cf-imagebed-dialog {
+	background: #ffffff;
+	border-radius: 16px;
+	padding: 24px;
+	box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+	text-align: center;
+	max-width: 320px;
+	width: 90%;
+	margin: 20px;
+}
+
+.cf-imagebed-dialog-title {
+	margin: 0 0 24px 0;
+	font-size: 18px;
+	font-weight: 600;
+	color: #333;
+}
+
+.cf-imagebed-button-container {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.cf-imagebed-camera-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 16px 20px;
+	border: none;
+	border-radius: 12px;
+	background: linear-gradient(135deg, #007acc, #0056b3);
+	color: white;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
+}
+
+.cf-imagebed-camera-btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 122, 204, 0.4);
+}
+
+.cf-imagebed-gallery-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 16px 20px;
+	border: none;
+	border-radius: 12px;
+	background: linear-gradient(135deg, #28a745, #1e7e34);
+	color: white;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.cf-imagebed-gallery-btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.cf-imagebed-cancel-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 12px 20px;
+	border: 2px solid #e9ecef;
+	border-radius: 12px;
+	background: transparent;
+	color: #6c757d;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.cf-imagebed-cancel-btn:hover {
+	background-color: #f8f9fa;
+	border-color: #dee2e6;
+}

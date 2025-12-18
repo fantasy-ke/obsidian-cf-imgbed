@@ -17,11 +17,11 @@ export class ClientCompressor {
 		const fileSizeMB = file.size / (1024 * 1024);
 		
 		if (fileSizeMB <= thresholdMB) {
-			console.log(`CF ImageBed: 文件大小 ${fileSizeMB.toFixed(2)}MB 未超过阈值 ${thresholdMB}MB，跳过压缩`);
+			console.debug(`CF ImageBed: File size ${fileSizeMB.toFixed(2)}MB does not exceed threshold ${thresholdMB}MB, skipping compression`);
 			return file;
 		}
 
-		console.log(`CF ImageBed: 开始压缩图片，原始大小: ${fileSizeMB.toFixed(2)}MB，目标大小: ${targetSizeMB}MB`);
+		console.debug(`CF ImageBed: Starting image compression, original size: ${fileSizeMB.toFixed(2)}MB, target size: ${targetSizeMB}MB`);
 
 		try {
 			// 创建图片对象
@@ -73,7 +73,7 @@ export class ClientCompressor {
 			});
 
 			const compressedSizeMB = compressedFile.size / (1024 * 1024);
-			console.log(`CF ImageBed: 压缩完成，压缩后大小: ${compressedSizeMB.toFixed(2)}MB`);
+			console.debug(`CF ImageBed: Compression complete, compressed size: ${compressedSizeMB.toFixed(2)}MB`);
 
 			// 清理资源
 			URL.revokeObjectURL(img.src);

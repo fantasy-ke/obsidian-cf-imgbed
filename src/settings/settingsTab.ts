@@ -1,11 +1,10 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { CFImageBedSettings } from '../types';
-import { SettingsValidator } from './settingsValidator';
 
 export class CFImageBedSettingTab extends PluginSettingTab {
-	plugin: any;
+	plugin: Plugin;
 
-	constructor(app: App, plugin: any) {
+	constructor(app: App, plugin: Plugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -18,7 +17,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		// 添加插件专用的CSS类名，限制样式作用域
 		containerEl.addClass('cf-imagebed-settings');
 
-		containerEl.createEl('h2', { text: 'CF ImageBed 设置' });
+		new Setting(containerEl).setName('CF ImageBed settings').setHeading();
 		
 		// 创建选项卡容器
 		const tabContainer = containerEl.createDiv('cf-imagebed-tabs');
@@ -69,7 +68,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		// API URL 设置
 		new Setting(container)
 			.setName('API URL')
-			.setDesc('CloudFlare ImgBed 的 API 地址（例如：https://your.domain）')
+			.setDesc('CloudFlare ImgBed API address (e.g., https://your.domain)')
 			.addText(text => text
 				.setPlaceholder('https://your.domain')
 				.setValue(this.plugin.settings.apiUrl)
@@ -80,8 +79,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 认证码设置
 		new Setting(container)
-			.setName('认证码')
-			.setDesc('上传认证码')
+			.setName('Auth code')
+			.setDesc('Upload authentication code')
 			.addText(text => text
 				.setPlaceholder('your_authCode')
 				.setValue(this.plugin.settings.authCode)
@@ -92,8 +91,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 上传渠道设置
 		new Setting(container)
-			.setName('上传渠道')
-			.setDesc('选择上传渠道')
+			.setName('Upload channel')
+			.setDesc('Select upload channel')
 			.addDropdown(dropdown => dropdown
 				.addOption('telegram', 'Telegram')
 				.addOption('cfr2', 'CloudFlare R2')
@@ -106,8 +105,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 文件命名方式设置
 		new Setting(container)
-			.setName('文件命名方式')
-			.setDesc('选择文件命名方式')
+			.setName('File naming method')
+			.setDesc('Select file naming method')
 			.addDropdown(dropdown => dropdown
 				.addOption('default', '默认前缀_原名命名')
 				.addOption('index', '仅前缀命名')
@@ -121,8 +120,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 返回格式设置
 		new Setting(container)
-			.setName('返回链接格式')
-			.setDesc('选择返回链接格式')
+			.setName('Return link format')
+			.setDesc('Select return link format')
 			.addDropdown(dropdown => dropdown
 				.addOption('default', '默认格式 /file/id')
 				.addOption('full', '完整链接格式')
@@ -134,8 +133,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 上传目录设置
 		new Setting(container)
-			.setName('上传目录')
-			.setDesc('上传目录，用相对路径表示（例如：img/test）')
+			.setName('Upload folder')
+			.setDesc('Upload folder, use relative path (e.g., img/test)')
 			.addText(text => text
 				.setPlaceholder('img/test')
 				.setValue(this.plugin.settings.uploadFolder)
@@ -146,8 +145,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 服务端压缩设置
 		new Setting(container)
-			.setName('服务端压缩')
-			.setDesc('启用服务端压缩（仅针对 Telegram 渠道的图片文件）')
+			.setName('Server compression')
+			.setDesc('Enable server-side compression (only for Telegram channel image files)')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.serverCompress)
 				.onChange(async (value) => {
@@ -157,8 +156,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 自动重试设置
 		new Setting(container)
-			.setName('自动重试')
-			.setDesc('失败时自动切换渠道重试')
+			.setName('Auto retry')
+			.setDesc('Automatically switch channels and retry on failure')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.autoRetry)
 				.onChange(async (value) => {
@@ -170,8 +169,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 	private createAdvancedSettings(container: HTMLElement): void {
 		// 文件大小限制
 		new Setting(container)
-			.setName('最大文件大小')
-			.setDesc('设置上传文件的最大大小（MB）')
+			.setName('Maximum file size')
+			.setDesc('Set maximum size for uploaded files (MB)')
 			.addSlider(slider => slider
 				.setLimits(1, 50, 1)
 				.setValue(this.plugin.settings.maxFileSize)
@@ -183,8 +182,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 允许的文件类型
 		new Setting(container)
-			.setName('允许的文件类型')
-			.setDesc('设置允许上传的文件类型（用逗号分隔）')
+			.setName('Allowed file types')
+			.setDesc('Set allowed file types for upload (comma-separated)')
 			.addText(text => text
 				.setPlaceholder('jpg,jpeg,png,gif,webp,bmp')
 				.setValue(this.plugin.settings.allowedFileTypes.join(','))
@@ -195,8 +194,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 水印设置
 		new Setting(container)
-			.setName('启用水印')
-			.setDesc('为上传的图片添加水印')
+			.setName('Enable watermark')
+			.setDesc('Add watermark to uploaded images')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.enableWatermark)
 				.onChange(async (value) => {
@@ -204,19 +203,19 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 					// 不刷新页面，通过控件的 disabled 逻辑生效
 					const fields = container.querySelectorAll('input, select');
-					fields.forEach((el: any) => {
+					fields.forEach((el) => {
 						const label = (el.closest('.setting-item')?.querySelector('.setting-item-name')?.textContent || '').trim();
-						const dependent = ['水印文字','水印位置','水印字体大小','水印透明度'];
+						const dependent = ['Watermark text', 'Watermark position', 'Watermark font size', 'Watermark opacity'];
 						if (dependent.some(d => label.includes(d))) {
-							el.disabled = !value;
+							(el as HTMLInputElement | HTMLSelectElement).disabled = !value;
 						}
 					});
 				}));
 
 		// 水印文字
 		new Setting(container)
-			.setName('水印文字')
-			.setDesc('设置水印文字内容')
+			.setName('Watermark text')
+			.setDesc('Set watermark text content')
 			.addText(text => text
 				.setPlaceholder('水印文字')
 				.setValue(this.plugin.settings.watermarkText)
@@ -228,8 +227,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 水印位置
 		new Setting(container)
-			.setName('水印位置')
-			.setDesc('设置水印在图片中的位置')
+			.setName('Watermark position')
+			.setDesc('Set watermark position in image')
 			.addDropdown(dropdown => dropdown
 				.addOption('top-left', '左上角')
 				.addOption('top-right', '右上角')
@@ -245,8 +244,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 水印字体大小
 		new Setting(container)
-			.setName('水印字体大小')
-			.setDesc('设置水印文字的字体大小（像素）')
+			.setName('Watermark font size')
+			.setDesc('Set watermark text font size (pixels)')
 			.addSlider(slider => slider
 				.setLimits(12, 72, 2)
 				.setValue(this.plugin.settings.watermarkSize)
@@ -259,8 +258,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 水印透明度
 		new Setting(container)
-			.setName('水印透明度')
-			.setDesc('设置水印的透明度（0-1）')
+			.setName('Watermark opacity')
+			.setDesc('Set watermark opacity (0-1)')
 			.addSlider(slider => slider
 				.setLimits(0.1, 1, 0.1)
 				.setValue(this.plugin.settings.watermarkOpacity)
@@ -273,8 +272,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 客户端压缩设置
 		new Setting(container)
-			.setName('启用客户端压缩')
-			.setDesc('在上传前自动压缩图片以减少文件大小')
+			.setName('Enable client compression')
+			.setDesc('Automatically compress images before upload to reduce file size')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.enableClientCompress)
 				.onChange(async (value) => {
@@ -282,19 +281,19 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 					// 不刷新页面，直接切换阈值与目标大小的禁用状态
 					const fields = container.querySelectorAll('input');
-					fields.forEach((el: any) => {
+					fields.forEach((el) => {
 						const label = (el.closest('.setting-item')?.querySelector('.setting-item-name')?.textContent || '').trim();
-						const dependent = ['压缩阈值','期望大小'];
+						const dependent = ['Compression threshold', 'Target size'];
 						if (dependent.some(d => label.includes(d))) {
-							el.disabled = !value;
+							(el as HTMLInputElement).disabled = !value;
 						}
 					});
 				}));
 
 		// 压缩阈值
 		new Setting(container)
-			.setName('压缩阈值')
-			.setDesc('设置图片大小阈值，超过此值将自动压缩（MB）')
+			.setName('Compression threshold')
+			.setDesc('Set image size threshold, files exceeding this will be automatically compressed (MB)')
 			.addSlider(slider => slider
 				.setLimits(0.5, 10, 0.5)
 				.setValue(this.plugin.settings.compressThreshold)
@@ -307,8 +306,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 期望大小
 		new Setting(container)
-			.setName('期望大小')
-			.setDesc('设置压缩后图片大小期望值（MB）')
+			.setName('Target size')
+			.setDesc('Set expected size for compressed images (MB)')
 			.addSlider(slider => slider
 				.setLimits(0.1, 5, 0.1)
 				.setValue(this.plugin.settings.targetSize)
@@ -323,8 +322,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 	private createUserExperienceSettings(container: HTMLElement): void {
 		// 显示上传进度
 		new Setting(container)
-			.setName('显示上传提示')
-			.setDesc('在上传过程中显示提示信息')
+			.setName('Show upload progress')
+			.setDesc('Show progress information during upload')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showUploadProgress)
 				.onChange(async (value) => {
@@ -334,8 +333,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 显示成功通知
 		new Setting(container)
-			.setName('显示成功通知')
-			.setDesc('上传成功后显示通知消息')
+			.setName('Show success notification')
+			.setDesc('Show notification message on successful upload')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showSuccessNotification)
 				.onChange(async (value) => {
@@ -345,8 +344,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 显示错误通知
 		new Setting(container)
-			.setName('显示错误通知')
-			.setDesc('上传失败时显示错误消息')
+			.setName('Show error notification')
+			.setDesc('Show error message when upload fails')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showErrorNotification)
 				.onChange(async (value) => {
@@ -356,8 +355,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 通知持续时间
 		new Setting(container)
-			.setName('通知持续时间')
-			.setDesc('设置通知消息显示的持续时间（秒）')
+			.setName('Notification duration')
+			.setDesc('Set duration for notification display (seconds)')
 			.addSlider(slider => slider
 				.setLimits(1, 10, 1)
 				.setValue(this.plugin.settings.notificationDuration)
@@ -373,8 +372,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 	private createBackupSettings(container: HTMLElement): void {
 		// 启用本地备份
 		new Setting(container)
-			.setName('启用本地备份')
-			.setDesc('在上传到云端的同时，在本地保存一份备份')
+			.setName('Enable local backup')
+			.setDesc('Save a local backup while uploading to cloud')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.enableLocalBackup)
 				.onChange(async (value) => {
@@ -387,8 +386,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 
 		// 备份路径
 		new Setting(container)
-			.setName('备份路径')
-			.setDesc('设置本地备份的存储路径（相对于库根目录）')
+			.setName('Backup path')
+			.setDesc('Set local backup storage path (relative to vault root)')
 			.addText(text => text
 				.setPlaceholder('attachments/backup')
 				.setValue(this.plugin.settings.backupPath)
