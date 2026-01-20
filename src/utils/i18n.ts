@@ -17,27 +17,45 @@ const translations: Record<Language, Translations> = {
 			basic: {
 				apiUrl: {
 					name: 'API URL',
-					desc: 'CloudFlare ImgBed 的 API 地址（例如：https://your.domain）'
+					desc: 'CloudFlare ImgBed 的 API 地址（例如：https://your.domain）',
+					placeholder: 'https://your.domain'
 				},
 				authCode: {
 					name: '认证码',
-					desc: '上传认证码'
+					desc: '上传认证码',
+					placeholder: 'your_authCode'
 				},
 				uploadChannel: {
 					name: '上传渠道',
-					desc: '选择上传渠道'
+					desc: '选择上传渠道',
+					options: {
+						telegram: 'Telegram',
+						cfr2: 'Cloudflare R2',
+						s3: 'S3'
+					}
 				},
 				uploadNameType: {
 					name: '文件命名方式',
-					desc: '选择文件命名方式'
+					desc: '选择文件命名方式',
+					options: {
+						default: '默认前缀_原名命名',
+						index: '仅前缀命名',
+						origin: '仅原名命名',
+						short: '短链接命名法'
+					}
 				},
 				returnFormat: {
 					name: '返回链接格式',
-					desc: '选择返回链接格式'
+					desc: '选择返回链接格式',
+					options: {
+						default: '默认格式 /file/id',
+						full: '完整链接格式'
+					}
 				},
 				uploadFolder: {
 					name: '上传目录',
-					desc: '上传目录，用相对路径表示（例如：img/test）'
+					desc: '上传目录，用相对路径表示（例如：img/test）',
+					placeholder: 'img/test'
 				},
 				serverCompress: {
 					name: '服务端压缩',
@@ -55,7 +73,8 @@ const translations: Record<Language, Translations> = {
 				},
 				allowedFileTypes: {
 					name: '允许的文件类型',
-					desc: '设置允许上传的文件类型（用逗号分隔）'
+					desc: '设置允许上传的文件类型（用逗号分隔）',
+					placeholder: 'jpg,jpeg,png,gif,webp,bmp'
 				},
 				enableWatermark: {
 					name: '启用水印',
@@ -63,11 +82,19 @@ const translations: Record<Language, Translations> = {
 				},
 				watermarkText: {
 					name: '水印文字',
-					desc: '设置水印文字内容'
+					desc: '设置水印文字内容',
+					placeholder: '水印文字'
 				},
 				watermarkPosition: {
 					name: '水印位置',
-					desc: '设置水印在图片中的位置'
+					desc: '设置水印在图片中的位置',
+					options: {
+						topLeft: '左上角',
+						topRight: '右上角',
+						bottomLeft: '左下角',
+						bottomRight: '右下角',
+						center: '居中'
+					}
 				},
 				watermarkSize: {
 					name: '水印字体大小',
@@ -115,7 +142,8 @@ const translations: Record<Language, Translations> = {
 				},
 				backupPath: {
 					name: '备份路径',
-					desc: '设置本地备份的存储路径（相对于库根目录）'
+					desc: '设置本地备份的存储路径（相对于库根目录）',
+					placeholder: 'attachments/backup'
 				}
 			},
 			language: {
@@ -145,27 +173,45 @@ const translations: Record<Language, Translations> = {
 			basic: {
 				apiUrl: {
 					name: 'API URL',
-					desc: 'CloudFlare ImgBed API address (e.g., https://your.domain)'
+					desc: 'CloudFlare ImgBed API address (e.g., https://your.domain)',
+					placeholder: 'https://your.domain'
 				},
 				authCode: {
 					name: 'Auth code',
-					desc: 'Upload authentication code'
+					desc: 'Upload authentication code',
+					placeholder: 'Your auth code'
 				},
 				uploadChannel: {
 					name: 'Upload channel',
-					desc: 'Select upload channel'
+					desc: 'Select upload channel',
+					options: {
+						telegram: 'Telegram',
+						cfr2: 'Cloudflare R2',
+						s3: 'S3'
+					}
 				},
 				uploadNameType: {
 					name: 'File naming method',
-					desc: 'Select file naming method'
+					desc: 'Select file naming method',
+					options: {
+						default: 'Default prefix_original name',
+						index: 'Prefix only',
+						origin: 'Original name only',
+						short: 'Short link'
+					}
 				},
 				returnFormat: {
 					name: 'Return link format',
-					desc: 'Select return link format'
+					desc: 'Select return link format',
+					options: {
+						default: 'Default format /file/id',
+						full: 'Full link format'
+					}
 				},
 				uploadFolder: {
 					name: 'Upload folder',
-					desc: 'Upload folder, use relative path (e.g., img/test)'
+					desc: 'Upload folder, use relative path (e.g., img/test)',
+					placeholder: 'img/test'
 				},
 				serverCompress: {
 					name: 'Server compression',
@@ -183,7 +229,8 @@ const translations: Record<Language, Translations> = {
 				},
 				allowedFileTypes: {
 					name: 'Allowed file types',
-					desc: 'Set allowed file types for upload (comma-separated)'
+					desc: 'Set allowed file types for upload (comma-separated)',
+					placeholder: 'jpg,jpeg,png,gif,webp,bmp'
 				},
 				enableWatermark: {
 					name: 'Enable watermark',
@@ -191,11 +238,19 @@ const translations: Record<Language, Translations> = {
 				},
 				watermarkText: {
 					name: 'Watermark text',
-					desc: 'Set watermark text content'
+					desc: 'Set watermark text content',
+					placeholder: 'Watermark text'
 				},
 				watermarkPosition: {
 					name: 'Watermark position',
-					desc: 'Set watermark position in image'
+					desc: 'Set watermark position in image',
+					options: {
+						topLeft: 'Top left',
+						topRight: 'Top right',
+						bottomLeft: 'Bottom left',
+						bottomRight: 'Bottom right',
+						center: 'Center'
+					}
 				},
 				watermarkSize: {
 					name: 'Watermark font size',
@@ -243,7 +298,8 @@ const translations: Record<Language, Translations> = {
 				},
 				backupPath: {
 					name: 'Backup path',
-					desc: 'Set local backup storage path (relative to vault root)'
+					desc: 'Set local backup storage path (relative to vault root)',
+					placeholder: 'attachments/backup'
 				}
 			},
 			language: {
@@ -280,7 +336,7 @@ export class I18n {
 
 	t(key: string): string {
 		const keys = key.split('.');
-		let value: any = translations[this.currentLanguage];
+		let value: Translations | string = translations[this.currentLanguage];
 
 		for (const k of keys) {
 			if (value && typeof value === 'object' && k in value) {

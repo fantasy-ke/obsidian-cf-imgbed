@@ -92,7 +92,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.basic.apiUrl.name'))
 			.setDesc(this.i18n.t('settings.basic.apiUrl.desc'))
 			.addText(text => text
-				.setPlaceholder('https://your.domain')
+				.setPlaceholder(this.i18n.t('settings.basic.apiUrl.placeholder'))
 				.setValue(this.plugin.settings.apiUrl)
 				.onChange(async (value) => {
 					this.plugin.settings.apiUrl = value;
@@ -104,7 +104,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.basic.authCode.name'))
 			.setDesc(this.i18n.t('settings.basic.authCode.desc'))
 			.addText(text => text
-				.setPlaceholder('your_authCode')
+				.setPlaceholder(this.i18n.t('settings.basic.authCode.placeholder'))
 				.setValue(this.plugin.settings.authCode)
 				.onChange(async (value) => {
 					this.plugin.settings.authCode = value;
@@ -116,9 +116,9 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.basic.uploadChannel.name'))
 			.setDesc(this.i18n.t('settings.basic.uploadChannel.desc'))
 			.addDropdown(dropdown => dropdown
-				.addOption('telegram', 'Telegram')
-				.addOption('cfr2', 'CloudFlare R2')
-				.addOption('s3', 'S3')
+				.addOption('telegram', this.i18n.t('settings.basic.uploadChannel.options.telegram'))
+				.addOption('cfr2', this.i18n.t('settings.basic.uploadChannel.options.cfr2'))
+				.addOption('s3', this.i18n.t('settings.basic.uploadChannel.options.s3'))
 				.setValue(this.plugin.settings.uploadChannel)
 				.onChange(async (value) => {
 					this.plugin.settings.uploadChannel = value;
@@ -130,10 +130,10 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.basic.uploadNameType.name'))
 			.setDesc(this.i18n.t('settings.basic.uploadNameType.desc'))
 			.addDropdown(dropdown => dropdown
-				.addOption('default', '默认前缀_原名命名')
-				.addOption('index', '仅前缀命名')
-				.addOption('origin', '仅原名命名')
-				.addOption('short', '短链接命名法')
+				.addOption('default', this.i18n.t('settings.basic.uploadNameType.options.default'))
+				.addOption('index', this.i18n.t('settings.basic.uploadNameType.options.index'))
+				.addOption('origin', this.i18n.t('settings.basic.uploadNameType.options.origin'))
+				.addOption('short', this.i18n.t('settings.basic.uploadNameType.options.short'))
 				.setValue(this.plugin.settings.uploadNameType)
 				.onChange(async (value) => {
 					this.plugin.settings.uploadNameType = value;
@@ -145,8 +145,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.basic.returnFormat.name'))
 			.setDesc(this.i18n.t('settings.basic.returnFormat.desc'))
 			.addDropdown(dropdown => dropdown
-				.addOption('default', '默认格式 /file/id')
-				.addOption('full', '完整链接格式')
+				.addOption('default', this.i18n.t('settings.basic.returnFormat.options.default'))
+				.addOption('full', this.i18n.t('settings.basic.returnFormat.options.full'))
 				.setValue(this.plugin.settings.returnFormat)
 				.onChange(async (value) => {
 					this.plugin.settings.returnFormat = value;
@@ -158,7 +158,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.basic.uploadFolder.name'))
 			.setDesc(this.i18n.t('settings.basic.uploadFolder.desc'))
 			.addText(text => text
-				.setPlaceholder('img/test')
+				.setPlaceholder(this.i18n.t('settings.basic.uploadFolder.placeholder'))
 				.setValue(this.plugin.settings.uploadFolder)
 				.onChange(async (value) => {
 					this.plugin.settings.uploadFolder = value;
@@ -207,7 +207,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.advanced.allowedFileTypes.name'))
 			.setDesc(this.i18n.t('settings.advanced.allowedFileTypes.desc'))
 			.addText(text => text
-				.setPlaceholder('jpg,jpeg,png,gif,webp,bmp')
+				.setPlaceholder(this.i18n.t('settings.advanced.allowedFileTypes.placeholder'))
 				.setValue(this.plugin.settings.allowedFileTypes.join(','))
 				.onChange(async (value) => {
 					this.plugin.settings.allowedFileTypes = value.split(',').map(t => t.trim());
@@ -244,7 +244,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.advanced.watermarkText.name'))
 			.setDesc(this.i18n.t('settings.advanced.watermarkText.desc'))
 			.addText(text => text
-				.setPlaceholder('水印文字')
+				.setPlaceholder(this.i18n.t('settings.advanced.watermarkText.placeholder'))
 				.setValue(this.plugin.settings.watermarkText)
 				.setDisabled(!this.plugin.settings.enableWatermark)
 				.onChange(async (value) => {
@@ -257,11 +257,11 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.advanced.watermarkPosition.name'))
 			.setDesc(this.i18n.t('settings.advanced.watermarkPosition.desc'))
 			.addDropdown(dropdown => dropdown
-				.addOption('top-left', '左上角')
-				.addOption('top-right', '右上角')
-				.addOption('bottom-left', '左下角')
-				.addOption('bottom-right', '右下角')
-				.addOption('center', '居中')
+				.addOption('top-left', this.i18n.t('settings.advanced.watermarkPosition.options.topLeft'))
+				.addOption('top-right', this.i18n.t('settings.advanced.watermarkPosition.options.topRight'))
+				.addOption('bottom-left', this.i18n.t('settings.advanced.watermarkPosition.options.bottomLeft'))
+				.addOption('bottom-right', this.i18n.t('settings.advanced.watermarkPosition.options.bottomRight'))
+				.addOption('center', this.i18n.t('settings.advanced.watermarkPosition.options.center'))
 				.setValue(this.plugin.settings.watermarkPosition)
 				.setDisabled(!this.plugin.settings.enableWatermark)
 				.onChange(async (value) => {
@@ -315,7 +315,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 							this.i18n.t('settings.advanced.targetSize.name')
 						];
 						if (dependent.some(d => label.includes(d))) {
-							(el as HTMLInputElement).disabled = !value;
+							(el).disabled = !value;
 						}
 					});
 				}));
@@ -419,7 +419,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.backup.backupPath.name'))
 			.setDesc(this.i18n.t('settings.backup.backupPath.desc'))
 			.addText(text => text
-				.setPlaceholder('attachments/backup')
+				.setPlaceholder(this.i18n.t('settings.backup.backupPath.placeholder'))
 				.setValue(this.plugin.settings.backupPath)
 				.setDisabled(!this.plugin.settings.enableLocalBackup)
 				.onChange(async (value) => {

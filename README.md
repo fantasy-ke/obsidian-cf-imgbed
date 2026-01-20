@@ -117,7 +117,7 @@
 ## 版本更新历史
 
 <details>
-<summary><strong>v1.0.4 (最新版本)</strong></summary>
+<summary><strong>v1.0.5 (最新版本)</strong></summary>
 
 ### 新功能与优化
 - feat: 添加水印和压缩功能，优化设置界面和验证逻辑
