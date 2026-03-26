@@ -43,16 +43,28 @@ An Obsidian plugin for uploading images to CloudFlare ImgBed service with multip
 4. Click the gear icon next to the plugin to enter settings
 5. Configure the following required parameters:
    - **API URL**: Your CloudFlare ImgBed service address (e.g., `https://your.domain`)
-   - **Auth Code**: Your upload authentication code
+   - **Auth code** or **API token**: Either one is required; when API token is provided, Bearer token authentication is used with priority
 
 ### 2. Optional Configuration
 
-- **Upload Channel**: Choose `telegram`, `cfr2`, or `s3`
+- **Upload Channel**: Choose `telegram`, `cfr2`, `s3`, `discord`, or `huggingface`
+- **Channel Name**: Specify a concrete channel instance in multi-channel deployments
+- **Chunk Size**: Telegram defaults to 16MB, Discord defaults to 8MB; only shown for chunk-capable channels
 - **File Naming**: Select file naming rules
 - **Return Format**: Choose return link format
 - **Upload Folder**: Specify upload directory (optional)
-- **Server Compression**: Enable server-side compression
+- **Server Compression**: Only configurable for the Telegram channel
 - **Auto Retry**: Automatically switch channels on failure
+
+### 2.1 Upload channel overview
+
+| Channel | Advantages | Limitations |
+| --- | --- | --- |
+| Telegram Bot | Completely free, effectively unlimited capacity | Files larger than 20MB require chunk storage |
+| Cloudflare R2 | No file size limit, enterprise-grade performance | Billing is required after the 10GB free tier |
+| S3 compatible storage | Flexible vendors and pricing | Pricing depends on the provider |
+| Discord | Completely free and easy to use | Files larger than 10MB require chunk storage |
+| HuggingFace | Completely free and supports large direct uploads | Requires a HuggingFace account |
 
 ### 3. Upload Images
 
@@ -92,8 +104,17 @@ This plugin uses CloudFlare ImgBed's upload API with the following parameters:
 
 - **Endpoint**: `/upload`
 - **Method**: `POST`
-- **Authentication**: Upload authentication code
+- **Authentication**: Upload auth code, or API token with `upload` permission via Bearer token
 - **Content Type**: `multipart/form-data`
+
+### Chunked upload behavior
+
+- Telegram: default chunk size is **16MB**
+- Discord: default chunk size is **8MB**
+- HuggingFace: usually supports large direct uploads without client-side chunking
+- Cloudflare R2 / S3: usually do not require client-side chunking
+
+The plugin automatically decides whether chunked upload is needed according to the selected channel and file size.
 
 For detailed API documentation, please refer to CloudFlare ImgBed official [documentation](https://cfbed.sanyue.de/api/upload.html).
 

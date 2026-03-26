@@ -1,13 +1,18 @@
+export type UploadChannel = 'telegram' | 'cfr2' | 's3' | 'discord' | 'huggingface';
+
 export interface CFImageBedSettings {
 	// 基础配置
 	apiUrl: string;
 	authCode: string;
-	uploadChannel: string;
+	apiToken: string;
+	uploadChannel: UploadChannel;
+	channelName: string;
 	uploadNameType: string;
 	returnFormat: string;
 	uploadFolder: string;
 	serverCompress: boolean;
 	autoRetry: boolean;
+	chunkSizeMB: number;
 	
 	// 高级配置
 	maxFileSize: number; // MB
@@ -41,12 +46,15 @@ export const DEFAULT_SETTINGS: CFImageBedSettings = {
 	// 基础配置
 	apiUrl: '',
 	authCode: '',
+	apiToken: '',
 	uploadChannel: 'telegram',
+	channelName: '',
 	uploadNameType: 'default',
 	returnFormat: 'default',
 	uploadFolder: '',
 	serverCompress: true,
 	autoRetry: true,
+	chunkSizeMB: 16,
 	
 	// 高级配置
 	maxFileSize: 10, // 10MB

@@ -12,8 +12,12 @@ export class SettingsValidator {
 			errors.push('API URL 格式不正确');
 		}
 
-		if (!settings.authCode) {
-			errors.push('认证码不能为空');
+		if (!settings.authCode && !settings.apiToken) {
+			errors.push('认证码和 API Token 至少填写一项');
+		}
+
+		if (settings.chunkSizeMB < 1 || settings.chunkSizeMB > 100) {
+			errors.push('分块大小应在 1-100 MB 之间');
 		}
 
 		// 验证文件大小
@@ -44,6 +48,10 @@ export class SettingsValidator {
 		// 验证文件类型
 		if (settings.allowedFileTypes.length === 0) {
 			errors.push('至少需要指定一种允许的文件类型');
+		}
+
+		if (settings.channelName.trim() && /(^\/|\\|\.\.)/.test(settings.channelName.trim())) {
+			errors.push('渠道名称格式不正确');
 		}
 
 		// 验证水印设置

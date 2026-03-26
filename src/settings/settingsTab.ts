@@ -1,6 +1,7 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, DropdownComponent, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent } from 'obsidian';
 import CFImageBedPlugin from '../../main';
 import { I18n } from '../utils/i18n';
+import { UploadChannel } from '../types';
 
 export class CFImageBedSettingTab extends PluginSettingTab {
 	plugin: CFImageBedPlugin;
@@ -29,7 +30,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName(this.i18n.t('settings.language.name'))
 			.setDesc(this.i18n.t('settings.language.desc'))
-			.addDropdown(dropdown => dropdown
+			.addDropdown((dropdown: DropdownComponent) => dropdown
 				.addOption('zh', '中文')
 				.addOption('en', 'English')
 				.setValue(this.plugin.settings.language || 'zh')
@@ -60,8 +61,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		// 选项卡切换逻辑
 		const switchTab = (activeTab: HTMLElement, activeContent: HTMLElement) => {
 			// 移除所有活动状态
-			tabContainer.querySelectorAll('.cf-tab-button').forEach(btn => btn.classList.remove('active'));
-			tabContent.querySelectorAll('.cf-tab-panel').forEach(panel => panel.classList.remove('active'));
+			tabContainer.querySelectorAll('.cf-tab-button').forEach((btn: Element) => btn.classList.remove('active'));
+			tabContent.querySelectorAll('.cf-tab-panel').forEach((panel: Element) => panel.classList.remove('active'));
 			
 			// 添加活动状态
 			activeTab.classList.add('active');
@@ -87,14 +88,17 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 	}
 	
 	private createBasicSettings(container: HTMLElement): void {
+		const currentChannel = this.plugin.settings.uploadChannel;
+		const chunkDefault = this.getDefaultChunkSize(currentChannel);
+
 		// API URL 设置
 		new Setting(container)
 			.setName(this.i18n.t('settings.basic.apiUrl.name'))
 			.setDesc(this.i18n.t('settings.basic.apiUrl.desc'))
-			.addText(text => text
+			.addText((text: TextComponent) => text
 				.setPlaceholder(this.i18n.t('settings.basic.apiUrl.placeholder'))
 				.setValue(this.plugin.settings.apiUrl)
-				.onChange(async (value) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.apiUrl = value;
 					await this.plugin.saveSettings();
 				}));  
@@ -103,11 +107,22 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.basic.authCode.name'))
 			.setDesc(this.i18n.t('settings.basic.authCode.desc'))
-			.addText(text => text
+			.addText((text: TextComponent) => text
 				.setPlaceholder(this.i18n.t('settings.basic.authCode.placeholder'))
 				.setValue(this.plugin.settings.authCode)
-				.onChange(async (value) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.authCode = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(container)
+			.setName(this.i18n.t('settings.basic.apiToken.name'))
+			.setDesc(this.i18n.t('settings.basic.apiToken.desc'))
+			.addText((text: TextComponent) => text
+				.setPlaceholder(this.i18n.t('settings.basic.apiToken.placeholder'))
+				.setValue(this.plugin.settings.apiToken || '')
+				.onChange(async (value: string) => {
+					this.plugin.settings.apiToken = value.trim();
 					await this.plugin.saveSettings();
 				}));
 
@@ -115,27 +130,63 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.basic.uploadChannel.name'))
 			.setDesc(this.i18n.t('settings.basic.uploadChannel.desc'))
-			.addDropdown(dropdown => dropdown
+			.addDropdown((dropdown: DropdownComponent) => dropdown
 				.addOption('telegram', this.i18n.t('settings.basic.uploadChannel.options.telegram'))
 				.addOption('cfr2', this.i18n.t('settings.basic.uploadChannel.options.cfr2'))
 				.addOption('s3', this.i18n.t('settings.basic.uploadChannel.options.s3'))
+				.addOption('discord', this.i18n.t('settings.basic.uploadChannel.options.discord'))
+				.addOption('huggingface', this.i18n.t('settings.basic.uploadChannel.options.huggingface'))
 				.setValue(this.plugin.settings.uploadChannel)
-				.onChange(async (value) => {
+				.onChange(async (value: UploadChannel) => {
 					this.plugin.settings.uploadChannel = value;
+					if (this.shouldShowChunkSettings(value)) {
+						this.plugin.settings.chunkSizeMB = this.getDefaultChunkSize(value);
+					}
+					await this.plugin.saveSettings();
+					this.display();
+				}));
+
+		const channelTipSetting = new Setting(container)
+			.setName(this.i18n.t(`settings.basic.channelTips.${currentChannel}`))
+			.setDesc('');
+		channelTipSetting.settingEl.addClass('cf-channel-tip');
+
+		new Setting(container)
+			.setName(this.i18n.t('settings.basic.channelName.name'))
+			.setDesc(this.i18n.t('settings.basic.channelName.desc'))
+			.addText((text: TextComponent) => text
+				.setPlaceholder(this.i18n.t('settings.basic.channelName.placeholder'))
+				.setValue(this.plugin.settings.channelName || '')
+				.onChange(async (value: string) => {
+					this.plugin.settings.channelName = value;
 					await this.plugin.saveSettings();
 				}));
+
+		if (this.shouldShowChunkSettings(currentChannel)) {
+			new Setting(container)
+				.setName(this.i18n.t('settings.basic.chunkSizeMB.name'))
+				.setDesc(`${this.i18n.t('settings.basic.chunkSizeMB.desc')}（当前默认值：${chunkDefault}）`)
+				.addSlider((slider: SliderComponent) => slider
+					.setLimits(1, 32, 1)
+					.setValue(this.plugin.settings.chunkSizeMB || chunkDefault)
+					.setDynamicTooltip()
+					.onChange(async (value: number) => {
+						this.plugin.settings.chunkSizeMB = value;
+						await this.plugin.saveSettings();
+					}));
+		}
 
 		// 文件命名方式设置
 		new Setting(container)
 			.setName(this.i18n.t('settings.basic.uploadNameType.name'))
 			.setDesc(this.i18n.t('settings.basic.uploadNameType.desc'))
-			.addDropdown(dropdown => dropdown
+			.addDropdown((dropdown: DropdownComponent) => dropdown
 				.addOption('default', this.i18n.t('settings.basic.uploadNameType.options.default'))
 				.addOption('index', this.i18n.t('settings.basic.uploadNameType.options.index'))
 				.addOption('origin', this.i18n.t('settings.basic.uploadNameType.options.origin'))
 				.addOption('short', this.i18n.t('settings.basic.uploadNameType.options.short'))
 				.setValue(this.plugin.settings.uploadNameType)
-				.onChange(async (value) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.uploadNameType = value;
 					await this.plugin.saveSettings();
 				}));
@@ -144,11 +195,11 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.basic.returnFormat.name'))
 			.setDesc(this.i18n.t('settings.basic.returnFormat.desc'))
-			.addDropdown(dropdown => dropdown
+			.addDropdown((dropdown: DropdownComponent) => dropdown
 				.addOption('default', this.i18n.t('settings.basic.returnFormat.options.default'))
 				.addOption('full', this.i18n.t('settings.basic.returnFormat.options.full'))
 				.setValue(this.plugin.settings.returnFormat)
-				.onChange(async (value) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.returnFormat = value;
 					await this.plugin.saveSettings();
 				}));
@@ -157,35 +208,53 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.basic.uploadFolder.name'))
 			.setDesc(this.i18n.t('settings.basic.uploadFolder.desc'))
-			.addText(text => text
+			.addText((text: TextComponent) => text
 				.setPlaceholder(this.i18n.t('settings.basic.uploadFolder.placeholder'))
 				.setValue(this.plugin.settings.uploadFolder)
-				.onChange(async (value) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.uploadFolder = value;
 					await this.plugin.saveSettings();
 				}));
 
-		// 服务端压缩设置
-		new Setting(container)
-			.setName(this.i18n.t('settings.basic.serverCompress.name'))
-			.setDesc(this.i18n.t('settings.basic.serverCompress.desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.serverCompress)
-				.onChange(async (value) => {
-					this.plugin.settings.serverCompress = value;
-					await this.plugin.saveSettings();
-				}));
+		if (currentChannel === 'telegram') {
+			// 服务端压缩设置
+			new Setting(container)
+				.setName(this.i18n.t('settings.basic.serverCompress.name'))
+				.setDesc(this.i18n.t('settings.basic.serverCompress.desc'))
+				.addToggle((toggle: ToggleComponent) => toggle
+					.setValue(this.plugin.settings.serverCompress)
+					.onChange(async (value: boolean) => {
+						this.plugin.settings.serverCompress = value;
+						await this.plugin.saveSettings();
+					}));
+		}
 
 		// 自动重试设置
 		new Setting(container)
 			.setName(this.i18n.t('settings.basic.autoRetry.name'))
 			.setDesc(this.i18n.t('settings.basic.autoRetry.desc'))
-			.addToggle(toggle => toggle
+			.addToggle((toggle: ToggleComponent) => toggle
 				.setValue(this.plugin.settings.autoRetry)
-				.onChange(async (value) => {
+				.onChange(async (value: boolean) => {
 					this.plugin.settings.autoRetry = value;
 					await this.plugin.saveSettings();
 				}));
+	}
+
+	private shouldShowChunkSettings(channel: UploadChannel): boolean {
+		return channel === 'telegram' || channel === 'discord';
+	}
+
+	private getDefaultChunkSize(channel: UploadChannel): number {
+		if (channel === 'discord') {
+			return 8;
+		}
+
+		if (channel === 'telegram') {
+			return 16;
+		}
+
+		return 16;
 	}
 	
 	private createAdvancedSettings(container: HTMLElement): void {
@@ -193,11 +262,11 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.advanced.maxFileSize.name'))
 			.setDesc(this.i18n.t('settings.advanced.maxFileSize.desc'))
-			.addSlider(slider => slider
+			.addSlider((slider: SliderComponent) => slider
 				.setLimits(1, 50, 1)
 				.setValue(this.plugin.settings.maxFileSize)
 				.setDynamicTooltip()
-				.onChange(async (value) => {
+				.onChange(async (value: number) => {
 					this.plugin.settings.maxFileSize = value;
 					await this.plugin.saveSettings();
 				}));
@@ -206,11 +275,11 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.advanced.allowedFileTypes.name'))
 			.setDesc(this.i18n.t('settings.advanced.allowedFileTypes.desc'))
-			.addText(text => text
+			.addText((text: TextComponent) => text
 				.setPlaceholder(this.i18n.t('settings.advanced.allowedFileTypes.placeholder'))
 				.setValue(this.plugin.settings.allowedFileTypes.join(','))
-				.onChange(async (value) => {
-					this.plugin.settings.allowedFileTypes = value.split(',').map(t => t.trim());
+				.onChange(async (value: string) => {
+					this.plugin.settings.allowedFileTypes = value.split(',').map((t: string) => t.trim());
 					await this.plugin.saveSettings();
 				}));
 
@@ -218,9 +287,9 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.advanced.enableWatermark.name'))
 			.setDesc(this.i18n.t('settings.advanced.enableWatermark.desc'))
-			.addToggle(toggle => toggle
+			.addToggle((toggle: ToggleComponent) => toggle
 				.setValue(this.plugin.settings.enableWatermark)
-				.onChange(async (value) => {
+				.onChange(async (value: boolean) => {
 					this.plugin.settings.enableWatermark = value;
 					await this.plugin.saveSettings();
 					// 不刷新页面，通过控件的 disabled 逻辑生效
@@ -243,11 +312,11 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.advanced.watermarkText.name'))
 			.setDesc(this.i18n.t('settings.advanced.watermarkText.desc'))
-			.addText(text => text
+			.addText((text: TextComponent) => text
 				.setPlaceholder(this.i18n.t('settings.advanced.watermarkText.placeholder'))
 				.setValue(this.plugin.settings.watermarkText)
 				.setDisabled(!this.plugin.settings.enableWatermark)
-				.onChange(async (value) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.watermarkText = value;
 					await this.plugin.saveSettings();
 				}));
@@ -256,7 +325,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.advanced.watermarkPosition.name'))
 			.setDesc(this.i18n.t('settings.advanced.watermarkPosition.desc'))
-			.addDropdown(dropdown => dropdown
+			.addDropdown((dropdown: DropdownComponent) => dropdown
 				.addOption('top-left', this.i18n.t('settings.advanced.watermarkPosition.options.topLeft'))
 				.addOption('top-right', this.i18n.t('settings.advanced.watermarkPosition.options.topRight'))
 				.addOption('bottom-left', this.i18n.t('settings.advanced.watermarkPosition.options.bottomLeft'))
@@ -264,7 +333,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.addOption('center', this.i18n.t('settings.advanced.watermarkPosition.options.center'))
 				.setValue(this.plugin.settings.watermarkPosition)
 				.setDisabled(!this.plugin.settings.enableWatermark)
-				.onChange(async (value) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.watermarkPosition = value;
 					await this.plugin.saveSettings();
 				}));
@@ -273,12 +342,12 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.advanced.watermarkSize.name'))
 			.setDesc(this.i18n.t('settings.advanced.watermarkSize.desc'))
-			.addSlider(slider => slider
+			.addSlider((slider: SliderComponent) => slider
 				.setLimits(12, 72, 2)
 				.setValue(this.plugin.settings.watermarkSize)
 				.setDynamicTooltip()
 				.setDisabled(!this.plugin.settings.enableWatermark)
-				.onChange(async (value) => {
+				.onChange(async (value: number) => {
 					this.plugin.settings.watermarkSize = value;
 					await this.plugin.saveSettings();
 				}));
@@ -287,12 +356,12 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.advanced.watermarkOpacity.name'))
 			.setDesc(this.i18n.t('settings.advanced.watermarkOpacity.desc'))
-			.addSlider(slider => slider
+			.addSlider((slider: SliderComponent) => slider
 				.setLimits(0.1, 1, 0.1)
 				.setValue(this.plugin.settings.watermarkOpacity)
 				.setDynamicTooltip()
 				.setDisabled(!this.plugin.settings.enableWatermark)
-				.onChange(async (value) => {
+				.onChange(async (value: number) => {
 					this.plugin.settings.watermarkOpacity = value;
 					await this.plugin.saveSettings();
 				}));
@@ -301,9 +370,9 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.advanced.enableClientCompress.name'))
 			.setDesc(this.i18n.t('settings.advanced.enableClientCompress.desc'))
-			.addToggle(toggle => toggle
+			.addToggle((toggle: ToggleComponent) => toggle
 				.setValue(this.plugin.settings.enableClientCompress)
-				.onChange(async (value) => {
+				.onChange(async (value: boolean) => {
 					this.plugin.settings.enableClientCompress = value;
 					await this.plugin.saveSettings();
 					// 不刷新页面，直接切换阈值与目标大小的禁用状态
@@ -324,12 +393,12 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.advanced.compressThreshold.name'))
 			.setDesc(this.i18n.t('settings.advanced.compressThreshold.desc'))
-			.addSlider(slider => slider
+			.addSlider((slider: SliderComponent) => slider
 				.setLimits(0.5, 10, 0.5)
 				.setValue(this.plugin.settings.compressThreshold)
 				.setDynamicTooltip()
 				.setDisabled(!this.plugin.settings.enableClientCompress)
-				.onChange(async (value) => {
+				.onChange(async (value: number) => {
 					this.plugin.settings.compressThreshold = value;
 					await this.plugin.saveSettings();
 				}));
@@ -338,12 +407,12 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.advanced.targetSize.name'))
 			.setDesc(this.i18n.t('settings.advanced.targetSize.desc'))
-			.addSlider(slider => slider
+			.addSlider((slider: SliderComponent) => slider
 				.setLimits(0.1, 5, 0.1)
 				.setValue(this.plugin.settings.targetSize)
 				.setDynamicTooltip()
 				.setDisabled(!this.plugin.settings.enableClientCompress)
-				.onChange(async (value) => {
+				.onChange(async (value: number) => {
 					this.plugin.settings.targetSize = value;
 					await this.plugin.saveSettings();
 				}));
@@ -354,9 +423,9 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.userExperience.showUploadProgress.name'))
 			.setDesc(this.i18n.t('settings.userExperience.showUploadProgress.desc'))
-			.addToggle(toggle => toggle
+			.addToggle((toggle: ToggleComponent) => toggle
 				.setValue(this.plugin.settings.showUploadProgress)
-				.onChange(async (value) => {
+				.onChange(async (value: boolean) => {
 					this.plugin.settings.showUploadProgress = value;
 					await this.plugin.saveSettings();
 				}));
@@ -365,9 +434,9 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.userExperience.showSuccessNotification.name'))
 			.setDesc(this.i18n.t('settings.userExperience.showSuccessNotification.desc'))
-			.addToggle(toggle => toggle
+			.addToggle((toggle: ToggleComponent) => toggle
 				.setValue(this.plugin.settings.showSuccessNotification)
-				.onChange(async (value) => {
+				.onChange(async (value: boolean) => {
 					this.plugin.settings.showSuccessNotification = value;
 					await this.plugin.saveSettings();
 				}));
@@ -376,9 +445,9 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.userExperience.showErrorNotification.name'))
 			.setDesc(this.i18n.t('settings.userExperience.showErrorNotification.desc'))
-			.addToggle(toggle => toggle
+			.addToggle((toggle: ToggleComponent) => toggle
 				.setValue(this.plugin.settings.showErrorNotification)
-				.onChange(async (value) => {
+				.onChange(async (value: boolean) => {
 					this.plugin.settings.showErrorNotification = value;
 					await this.plugin.saveSettings();
 				}));
@@ -387,11 +456,11 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.userExperience.notificationDuration.name'))
 			.setDesc(this.i18n.t('settings.userExperience.notificationDuration.desc'))
-			.addSlider(slider => slider
+			.addSlider((slider: SliderComponent) => slider
 				.setLimits(1, 10, 1)
 				.setValue(this.plugin.settings.notificationDuration)
 				.setDynamicTooltip()
-				.onChange(async (value) => {
+				.onChange(async (value: number) => {
 					this.plugin.settings.notificationDuration = value;
 					await this.plugin.saveSettings();
 				}));
@@ -404,9 +473,9 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.backup.enableLocalBackup.name'))
 			.setDesc(this.i18n.t('settings.backup.enableLocalBackup.desc'))
-			.addToggle(toggle => toggle
+			.addToggle((toggle: ToggleComponent) => toggle
 				.setValue(this.plugin.settings.enableLocalBackup)
-				.onChange(async (value) => {
+				.onChange(async (value: boolean) => {
 					this.plugin.settings.enableLocalBackup = value;
 					await this.plugin.saveSettings();
 					// 不刷新页面，直接切换备份路径输入框
@@ -418,11 +487,11 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName(this.i18n.t('settings.backup.backupPath.name'))
 			.setDesc(this.i18n.t('settings.backup.backupPath.desc'))
-			.addText(text => text
+			.addText((text: TextComponent) => text
 				.setPlaceholder(this.i18n.t('settings.backup.backupPath.placeholder'))
 				.setValue(this.plugin.settings.backupPath)
 				.setDisabled(!this.plugin.settings.enableLocalBackup)
-				.onChange(async (value) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.backupPath = value;
 					await this.plugin.saveSettings();
 				}));

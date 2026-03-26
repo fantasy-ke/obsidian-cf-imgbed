@@ -22,17 +22,40 @@ const translations: Record<Language, Translations> = {
 				},
 				authCode: {
 					name: '认证码',
-					desc: '上传认证码',
+					desc: '上传认证码（未填写 API Token 时必填）',
 					placeholder: 'your_authCode'
+				},
+				apiToken: {
+					name: 'API Token',
+					desc: 'API Token 认证（需要 upload 权限，优先于认证码）',
+					placeholder: 'your_api_token'
 				},
 				uploadChannel: {
 					name: '上传渠道',
-					desc: '选择上传渠道',
+					desc: '选择上传渠道，不同渠道会显示不同的专属参数',
 					options: {
 						telegram: 'Telegram',
 						cfr2: 'Cloudflare R2',
-						s3: 'S3'
+						s3: 'S3 兼容存储',
+						discord: 'Discord',
+						huggingface: 'HuggingFace'
 					}
+				},
+				channelName: {
+					name: '渠道名称',
+					desc: '指定具体的渠道实例，适用于多渠道场景',
+					placeholder: '例如：my-channel'
+				},
+				chunkSizeMB: {
+					name: '分块大小（MB）',
+					desc: 'Telegram 默认 16MB，Discord 默认 8MB；仅在需要分块上传的渠道中生效'
+				},
+				channelTips: {
+					telegram: '完全免费、无限容量；大于 20MB 文件需分片存储，可选服务端压缩。',
+					cfr2: '无文件大小限制、企业级性能；超出 10G 免费额度后收费，需要绑定支付方式。',
+					s3: '选择多样、价格灵活；费用与限制取决于具体服务商。',
+					discord: '完全免费、简单易用；大于 10MB 文件需分片存储，默认分块 8MB。',
+					huggingface: '完全免费、支持大文件直传；需要 HuggingFace 账号。'
 				},
 				uploadNameType: {
 					name: '文件命名方式',
@@ -178,17 +201,40 @@ const translations: Record<Language, Translations> = {
 				},
 				authCode: {
 					name: 'Auth code',
-					desc: 'Upload authentication code',
+					desc: 'Upload authentication code (required when API token is empty)',
 					placeholder: 'Your auth code'
+				},
+				apiToken: {
+					name: 'API token',
+					desc: 'API token authentication (requires upload permission and takes precedence over auth code)',
+					placeholder: 'Your API token'
 				},
 				uploadChannel: {
 					name: 'Upload channel',
-					desc: 'Select upload channel',
+					desc: 'Select an upload channel; channel-specific options will appear dynamically',
 					options: {
 						telegram: 'Telegram',
 						cfr2: 'Cloudflare R2',
-						s3: 'S3'
+						s3: 'S3 compatible storage',
+						discord: 'Discord',
+						huggingface: 'HuggingFace'
 					}
+				},
+				channelName: {
+					name: 'Channel name',
+					desc: 'Specify a concrete channel instance for multi-channel deployments',
+					placeholder: 'e.g. my-channel'
+				},
+				chunkSizeMB: {
+					name: 'Chunk size (MB)',
+					desc: 'Telegram defaults to 16MB and Discord defaults to 8MB; only applies to chunked-upload channels'
+				},
+				channelTips: {
+					telegram: 'Free with virtually unlimited capacity; files larger than 20MB require chunk storage and can use server compression.',
+					cfr2: 'No file size limit and enterprise-grade performance; charges apply beyond the 10GB free tier and billing setup is required.',
+					s3: 'Flexible providers and pricing; actual cost and limits depend on your chosen vendor.',
+					discord: 'Free and easy to use; files larger than 10MB require chunk storage, default chunk size is 8MB.',
+					huggingface: 'Free and supports large direct uploads; requires a HuggingFace account.'
 				},
 				uploadNameType: {
 					name: 'File naming method',
