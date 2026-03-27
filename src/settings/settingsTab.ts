@@ -91,6 +91,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 	private createBasicSettings(container: HTMLElement): void {
 		const currentChannel = this.plugin.settings.uploadChannel;
 		const chunkDefault = this.getDefaultChunkSize(currentChannel);
+		const templateHint = this.i18n.t('settings.templates.hint');
 
 		// API URL 设置
 		new Setting(container)
@@ -181,11 +182,29 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.addOption('index', this.i18n.t('settings.basic.uploadNameType.options.index'))
 				.addOption('origin', this.i18n.t('settings.basic.uploadNameType.options.origin'))
 				.addOption('short', this.i18n.t('settings.basic.uploadNameType.options.short'))
+				.addOption('custom', this.i18n.t('settings.basic.uploadNameType.options.custom'))
 				.setValue(this.plugin.settings.uploadNameType)
 				.onChange(async (value: string) => {
 					this.plugin.settings.uploadNameType = value;
+					if (value === 'custom' && !this.plugin.settings.customUploadNamePattern.trim()) {
+						this.plugin.settings.customUploadNamePattern = this.i18n.t('settings.basic.customUploadNamePattern.placeholder');
+					}
 					await this.plugin.saveSettings();
+					this.display();
 				}));
+
+		if (this.plugin.settings.uploadNameType === 'custom') {
+			new Setting(container)
+				.setName(this.i18n.t('settings.basic.customUploadNamePattern.name'))
+				.setDesc(`${this.i18n.t('settings.basic.customUploadNamePattern.desc')}\n${templateHint}`)
+				.addText((text: TextComponent) => text
+					.setPlaceholder(this.i18n.t('settings.basic.customUploadNamePattern.placeholder'))
+					.setValue(this.plugin.settings.customUploadNamePattern || '')
+					.onChange(async (value: string) => {
+						this.plugin.settings.customUploadNamePattern = value;
+						await this.plugin.saveSettings();
+					}));
+		}
 
 		// 返回格式设置
 		new Setting(container)
@@ -203,7 +222,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		// 上传目录设置
 		new Setting(container)
 			.setName(this.i18n.t('settings.basic.uploadFolder.name'))
-			.setDesc(this.i18n.t('settings.basic.uploadFolder.desc'))
+			.setDesc(`${this.i18n.t('settings.basic.uploadFolder.desc')}\n${templateHint}`)
 			.addText((text: TextComponent) => text
 				.setPlaceholder(this.i18n.t('settings.basic.uploadFolder.placeholder'))
 				.setValue(this.plugin.settings.uploadFolder)
@@ -491,6 +510,8 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 	}
 	
 	private createBackupSettings(container: HTMLElement): void {
+		let backupPathText: TextComponent | null = null;
+
 		// 启用本地备份
 		new Setting(container)
 			.setName(this.i18n.t('settings.backup.enableLocalBackup.name'))
@@ -500,23 +521,24 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.onChange(async (value: boolean) => {
 					this.plugin.settings.enableLocalBackup = value;
 					await this.plugin.saveSettings();
-					// 不刷新页面，直接切换备份路径输入框
-					const input = container.querySelector('input');
-					if (input) input.disabled = !value;
+					backupPathText?.setDisabled(!value);
 				}));
 
 		// 备份路径
 		new Setting(container)
 			.setName(this.i18n.t('settings.backup.backupPath.name'))
-			.setDesc(this.i18n.t('settings.backup.backupPath.desc'))
-			.addText((text: TextComponent) => text
-				.setPlaceholder(this.i18n.t('settings.backup.backupPath.placeholder'))
-				.setValue(this.plugin.settings.backupPath)
-				.setDisabled(!this.plugin.settings.enableLocalBackup)
-				.onChange(async (value: string) => {
-					this.plugin.settings.backupPath = value;
-					await this.plugin.saveSettings();
-				}));
+			.setDesc(`${this.i18n.t('settings.backup.backupPath.desc')}\n${this.i18n.t('settings.templates.hint')}`)
+			.addText((text: TextComponent) => {
+				backupPathText = text;
+				return text
+					.setPlaceholder(this.i18n.t('settings.backup.backupPath.placeholder'))
+					.setValue(this.plugin.settings.backupPath)
+					.setDisabled(!this.plugin.settings.enableLocalBackup)
+					.onChange(async (value: string) => {
+						this.plugin.settings.backupPath = value;
+						await this.plugin.saveSettings();
+					});
+			});
 	}
 	
 }

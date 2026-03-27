@@ -21,7 +21,7 @@ export default class CFImageBedPlugin extends Plugin {
 		this.i18n = new I18n(this.settings.language || 'zh');
 
 		// 初始化服务
-		this.uploadService = new UploadService(this.settings);
+		this.uploadService = new UploadService(this.app, this.settings);
 		this.imageHandler = new ImageHandler(this.app, this.uploadService, () => this.settings, this.i18n);
 		this.eventHandlers = new EventHandlers(this.imageHandler, this.i18n);
 

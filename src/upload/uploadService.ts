@@ -1,14 +1,25 @@
-import { Notice, normalizePath, requestUrl, TFile, Vault } from 'obsidian';
+import { App, Notice, normalizePath, requestUrl, TFile } from 'obsidian';
 import { CFImageBedSettings } from '../types';
 import { ClientCompressor } from '../utils/clientCompressor';
 import { ClientWatermark } from '../utils/clientWatermark';
+import { buildCustomUploadFile, resolveTemplatePath } from '../utils/templateResolver';
+
+interface UploadRuntimeConfig {
+	file: File;
+	uploadNameType: string;
+	uploadFolder: string;
+	backupPath: string;
+}
 
 export class UploadService {
-	constructor(private settings: CFImageBedSettings) {}
+	constructor(
+		private app: App,
+		private settings: CFImageBedSettings
+	) {}
 
 	async uploadImage(
 		file: File,
-		options: { showErrorNotice?: boolean } = {}
+		options: { showErrorNotice?: boolean; noteFile?: TFile | null } = {}
 	): Promise<string | null> {
 		if (!this.settings.apiUrl || (!this.settings.authCode && !this.settings.apiToken)) {
 			if (options.showErrorNotice !== false) {
@@ -18,27 +29,29 @@ export class UploadService {
 		}
 
 		try {
+			const runtimeConfig = this.resolveUploadRuntimeConfig(file, options.noteFile ?? this.app.workspace.getActiveFile());
+
 			// 检查文件类型
-			if (!this.isAllowedFileType(file)) {
+			if (!this.isAllowedFileType(runtimeConfig.file)) {
 				if (options.showErrorNotice !== false) {
-					new Notice(`不支持的文件类型: ${file.type}`);
+					new Notice(`不支持的文件类型: ${runtimeConfig.file.type}`);
 				}
 				return null;
 			}
 
 			// 检查文件大小
-			if (!this.isFileSizeAllowed(file)) {
+			if (!this.isFileSizeAllowed(runtimeConfig.file)) {
 				if (options.showErrorNotice !== false) {
-					new Notice(`文件大小超过限制: ${ClientCompressor.formatFileSize(file.size)}`);
+					new Notice(`文件大小超过限制: ${ClientCompressor.formatFileSize(runtimeConfig.file.size)}`);
 				}
 				return null;
 			}
 
 			// 客户端处理（水印 + 压缩）
-			let processedFile = file;
+			let processedFile = runtimeConfig.file;
 			
 			// 1. 添加水印
-			if (this.settings.enableWatermark && ClientWatermark.isWatermarkable(file)) {
+			if (this.settings.enableWatermark && ClientWatermark.isWatermarkable(runtimeConfig.file)) {
 				console.debug('CF ImageBed: Starting watermark addition');
 				processedFile = await ClientWatermark.addWatermark(
 					processedFile,
@@ -59,21 +72,21 @@ export class UploadService {
 				);
 				
 				// 显示压缩结果
-				const originalSize = ClientCompressor.formatFileSize(file.size);
+				const originalSize = ClientCompressor.formatFileSize(runtimeConfig.file.size);
 				const processedSize = ClientCompressor.formatFileSize(processedFile.size);
 				console.debug(`CF ImageBed: Processing complete - Original: ${originalSize}, Processed: ${processedSize}`);
 			}
 
 			const result = this.shouldUseChunkedUpload(processedFile)
-				? await this.chunkedUpload(processedFile)
-				: await this.simpleUpload(processedFile);
+				? await this.chunkedUpload(processedFile, runtimeConfig)
+				: await this.simpleUpload(processedFile, runtimeConfig);
 
 			const src = this.extractSrc(result);
 			if (src) {
 				// 可选：本地备份
-				if (this.settings.enableLocalBackup && this.settings.backupPath?.trim()) {
+				if (this.settings.enableLocalBackup && runtimeConfig.backupPath.trim()) {
 					try {
-						await this.saveLocalBackup(processedFile, this.settings.backupPath);
+						await this.saveLocalBackup(processedFile, runtimeConfig.backupPath);
 				} catch (e) {
 					console.warn('Local backup failed:', e);
 				}
@@ -109,10 +122,13 @@ export class UploadService {
 		return file.size > chunkSizeBytes;
 	}
 
-	private getUploadQueryParams(extraParams?: Record<string, string>): URLSearchParams {
+	private getUploadQueryParams(
+		runtimeConfig: UploadRuntimeConfig,
+		extraParams?: Record<string, string>
+	): URLSearchParams {
 		const params = new URLSearchParams({
 			uploadChannel: this.settings.uploadChannel,
-			uploadNameType: this.settings.uploadNameType,
+			uploadNameType: runtimeConfig.uploadNameType,
 			returnFormat: this.settings.returnFormat,
 			autoRetry: this.settings.autoRetry.toString()
 		});
@@ -125,8 +141,8 @@ export class UploadService {
 			params.append('channelName', this.settings.channelName.trim());
 		}
 
-		if (this.settings.uploadFolder?.trim()) {
-			params.append('uploadFolder', this.settings.uploadFolder.trim());
+		if (runtimeConfig.uploadFolder.trim()) {
+			params.append('uploadFolder', runtimeConfig.uploadFolder.trim());
 		}
 
 		if (this.settings.uploadChannel === 'telegram') {
@@ -154,18 +170,18 @@ export class UploadService {
 		return headers;
 	}
 
-	private async simpleUpload(file: File): Promise<unknown> {
-		const params = this.getUploadQueryParams();
+	private async simpleUpload(file: File, runtimeConfig: UploadRuntimeConfig): Promise<unknown> {
+		const params = this.getUploadQueryParams(runtimeConfig);
 		return this.sendMultipartRequest(params, { file });
 	}
 
-	private async chunkedUpload(file: File): Promise<unknown> {
+	private async chunkedUpload(file: File, runtimeConfig: UploadRuntimeConfig): Promise<unknown> {
 		const chunkSizeBytes = Math.max(1, this.settings.chunkSizeMB) * 1024 * 1024;
 		const totalChunks = Math.ceil(file.size / chunkSizeBytes);
 		const originalFileType = file.type || 'application/octet-stream';
 
 		const initResult = await this.sendMultipartRequest(
-			this.getUploadQueryParams({ initChunked: 'true' }),
+			this.getUploadQueryParams(runtimeConfig, { initChunked: 'true' }),
 			{
 				totalChunks: String(totalChunks),
 				originalFileName: file.name,
@@ -185,7 +201,7 @@ export class UploadService {
 			const chunkFile = new File([chunkBlob], file.name, { type: originalFileType });
 
 			await this.sendMultipartRequest(
-				this.getUploadQueryParams({ chunked: 'true' }),
+				this.getUploadQueryParams(runtimeConfig, { chunked: 'true' }),
 				{
 					uploadId,
 					chunkIndex: String(chunkIndex),
@@ -198,7 +214,7 @@ export class UploadService {
 		}
 
 		return this.sendMultipartRequest(
-			this.getUploadQueryParams({ chunked: 'true', merge: 'true' }),
+			this.getUploadQueryParams(runtimeConfig, { chunked: 'true', merge: 'true' }),
 			{
 				uploadId,
 				totalChunks: String(totalChunks),
@@ -292,6 +308,26 @@ export class UploadService {
 		return null;
 	}
 
+	private resolveUploadRuntimeConfig(file: File, noteFile: TFile | null): UploadRuntimeConfig {
+		const templateContext = {
+			noteFile,
+			originalFile: file
+		};
+		const uploadNameType = this.settings.uploadNameType === 'custom'
+			? 'origin'
+			: this.settings.uploadNameType;
+		const renamedFile = this.settings.uploadNameType === 'custom'
+			? buildCustomUploadFile(file, this.settings.customUploadNamePattern, templateContext)
+			: file;
+
+		return {
+			file: renamedFile,
+			uploadNameType,
+			uploadFolder: resolveTemplatePath(this.settings.uploadFolder, templateContext),
+			backupPath: resolveTemplatePath(this.settings.backupPath, templateContext)
+		};
+	}
+
 	private extractUploadId(result: unknown): string | null {
 		if (result && typeof result === 'object' && 'uploadId' in result) {
 			return String((result as { uploadId?: string }).uploadId || '');
@@ -301,24 +337,21 @@ export class UploadService {
 	}
 
 	private async saveLocalBackup(file: File, backupPath: string): Promise<void> {
-		// Obsidian 的 app 对象在此不可直接访问；通过 window.app 使用
-		const app = (window as { app?: { vault?: Vault } }).app;
-		if (!app?.vault) throw new Error('Cannot access Obsidian vault');
 		const normalized = normalizePath(backupPath);
 		const arrayBuffer = await file.arrayBuffer();
 		// 确保文件夹存在
 		try {
-			await app.vault.createFolder(normalized);
+			await this.app.vault.createFolder(normalized);
 		} catch {
 			// Folder may already exist, ignore error
 		}
 		const targetFilePath = normalizePath(`${normalized}/${file.name}`);
 		// 如果存在则覆盖
-		const existing = app.vault.getAbstractFileByPath(targetFilePath);
+		const existing = this.app.vault.getAbstractFileByPath(targetFilePath);
 		if (existing && existing instanceof TFile) {
-			await app.vault.modifyBinary(existing, arrayBuffer);
+			await this.app.vault.modifyBinary(existing, arrayBuffer);
 		} else {
-			await app.vault.createBinary(targetFilePath, arrayBuffer);
+			await this.app.vault.createBinary(targetFilePath, arrayBuffer);
 		}
 	}
 

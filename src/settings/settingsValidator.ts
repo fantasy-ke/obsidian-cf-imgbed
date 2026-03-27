@@ -54,6 +54,10 @@ export class SettingsValidator {
 			errors.push('渠道名称格式不正确');
 		}
 
+		if (settings.uploadNameType === 'custom' && !settings.customUploadNamePattern.trim()) {
+			errors.push('自定义命名时必须设置文件名模板');
+		}
+
 		// 验证水印设置
 		if (settings.enableWatermark) {
 			if (!settings.watermarkText.trim()) {

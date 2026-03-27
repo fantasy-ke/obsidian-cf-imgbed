@@ -53,9 +53,9 @@ An Obsidian plugin for uploading images to CloudFlare ImgBed with local image up
 - **Upload Channel**: Choose `telegram`, `cfr2`, `s3`, `discord`, or `huggingface`
 - **Channel Name**: Specify a concrete channel instance in multi-channel deployments
 - **Chunk Size**: Telegram defaults to 16MB, Discord defaults to 8MB; only shown for chunk-capable channels
-- **File Naming**: Select file naming rules
+- **File Naming**: Select file naming rules. In `custom` mode, the file is renamed with placeholders first, then uploaded using the original-name mode
 - **Return Format**: Choose return link format
-- **Upload Folder**: Specify upload directory (optional)
+- **Upload Folder**: Specify upload directory (optional). Placeholders are supported
 - **Server Compression**: Only configurable for the Telegram channel
 - **Auto Retry**: Automatically switch channels on failure
 
@@ -64,6 +64,44 @@ An Obsidian plugin for uploading images to CloudFlare ImgBed with local image up
 - **Enable Remote Image Upload**: When enabled, pasted markdown image links, HTML `<img>` tags, and plain image URLs will be fetched and uploaded to your own image bed
 - **Excluded Remote Domains**: Supports commas or new lines. Remote images from these domains are skipped to avoid duplicate uploads
 - **Auto-exclude Current Image Bed Domain**: The hostname from `API URL` is always excluded automatically
+- **Backup Path**: When local backup is enabled, the backup path also supports placeholders
+
+### 2.3 Placeholder reference
+
+The following settings support placeholders:
+
+- **Custom file name template**
+- **Upload folder**
+- **Backup path**
+
+#### Meaning of each placeholder
+
+| Placeholder | Meaning | Example result |
+| --- | --- | --- |
+| `${noteFileName}` | Current note file name without the `.md` extension | `weekly-report` |
+| `${noteFolderName}` | Name of the folder containing the current note | `Projects` |
+| `${noteFolderPath}` | Full folder path of the current note | `Notes/Projects` |
+| `${noteFilePath}` | Full path of the current note | `Notes/Projects/weekly-report.md` |
+| `${originalAttachmentFileName}` | Original attachment file name without extension | `image` |
+| `${originalAttachmentFileExtension}` | Original attachment file extension without the dot | `png` |
+| `${date}` | Current date, default format `YYYYMMDD` | `20260327` |
+| `${time}` | Current time, default format `HHmmss` | `153045` |
+| `${datetime}` | Current date and time, default format `YYYYMMDD-HHmmss` | `20260327-153045` |
+| `${timestamp}` | Current timestamp in milliseconds | `1774596645123` |
+| `${uuid}` | Random UUID | `550e8400-e29b-41d4-a716-446655440000` |
+
+#### Notes
+
+- String placeholders such as `${noteFileName}`, `${noteFolderName}`, and `${originalAttachmentFileName}` support simple formatting, for example `${noteFileName:{case:'lower'}}` and `${originalAttachmentFileName:{slugify:true}}`
+- `${date}`, `${time}`, and `${datetime}` support `momentJsFormat`, for example `${date:{momentJsFormat:'YYYY-MM-DD'}}`
+- Multiple placeholders can be combined, for example `${noteFileName}-${datetime}-${originalAttachmentFileName}`
+- In `custom` naming mode, the actual behavior is: rename the file from the template first, then upload it using the original-name mode
+
+#### Common template examples
+
+- **Custom file name template**: `${noteFileName}-${datetime}-${originalAttachmentFileName}`
+- **Upload folder**: `${noteFolderName}/${date}`
+- **Backup path**: `backup/${noteFolderName}/${noteFileName}`
 
 ### 2.1 Upload channel overview
 

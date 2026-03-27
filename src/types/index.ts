@@ -8,6 +8,7 @@ export interface CFImageBedSettings {
 	uploadChannel: UploadChannel;
 	channelName: string;
 	uploadNameType: string;
+	customUploadNamePattern: string;
 	returnFormat: string;
 	uploadFolder: string;
 	serverCompress: boolean;
@@ -52,6 +53,7 @@ export const DEFAULT_SETTINGS: CFImageBedSettings = {
 	uploadChannel: 'telegram',
 	channelName: '',
 	uploadNameType: 'default',
+	customUploadNamePattern: '${noteFileName}-${datetime}-${originalAttachmentFileName}',
 	returnFormat: 'default',
 	uploadFolder: '',
 	serverCompress: true,

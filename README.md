@@ -53,9 +53,9 @@
 - **上传渠道**：选择 `telegram`、`cfr2`、`s3`、`discord` 或 `huggingface`
 - **渠道名称**：在多渠道部署下指定具体渠道实例
 - **分块大小**：Telegram 默认 16MB，Discord 默认 8MB，仅在需要分块上传的渠道中显示
-- **文件命名方式**：选择文件命名规则
+- **文件命名方式**：选择文件命名规则；`custom` 模式会先按占位符模板重命名，再以原文件名方式上传
 - **返回链接格式**：选择返回的链接格式
-- **上传目录**：指定上传到特定目录（可选）
+- **上传目录**：指定上传到特定目录（可选），支持占位符
 - **服务端压缩**：仅 Telegram 渠道可配置，是否启用服务端压缩
 - **自动重试**：失败时是否自动切换渠道重试
 
@@ -64,6 +64,44 @@
 - **启用网络图片上传**：开启后，粘贴 markdown 外链图片、HTML `<img>` 或纯图片 URL 时，会先抓取原图再上传到自己的图床
 - **网络图片排除域名**：支持逗号或换行分隔，命中列表的外链图片会直接跳过，避免重复上传
 - **自动排除当前图床域名**：`API URL` 对应域名会自动加入排除范围，无需手动重复填写
+- **备份路径**：启用本地备份后，备份路径也支持占位符
+
+### 2.3 占位符说明
+
+以下设置支持占位符：
+
+- **自定义文件名模板**
+- **上传目录**
+- **备份路径**
+
+#### 每个占位符的含义
+
+| 占位符 | 含义 | 示例结果 |
+| --- | --- | --- |
+| `${noteFileName}` | 当前笔记文件名，不带 `.md` 扩展名 | `项目周报` |
+| `${noteFolderName}` | 当前笔记所在文件夹名称 | `Projects` |
+| `${noteFolderPath}` | 当前笔记所在文件夹路径 | `Notes/Projects` |
+| `${noteFilePath}` | 当前笔记完整路径 | `Notes/Projects/项目周报.md` |
+| `${originalAttachmentFileName}` | 原始附件文件名，不带扩展名 | `image` |
+| `${originalAttachmentFileExtension}` | 原始附件扩展名，不带点号 | `png` |
+| `${date}` | 当前日期，默认格式为 `YYYYMMDD` | `20260327` |
+| `${time}` | 当前时间，默认格式为 `HHmmss` | `153045` |
+| `${datetime}` | 当前日期和时间，默认格式为 `YYYYMMDD-HHmmss` | `20260327-153045` |
+| `${timestamp}` | 当前毫秒级时间戳 | `1774596645123` |
+| `${uuid}` | 随机 UUID | `550e8400-e29b-41d4-a716-446655440000` |
+
+#### 补充说明
+
+- `${noteFileName}`、`${noteFolderName}`、`${originalAttachmentFileName}` 这类字符串占位符支持简单格式，例如 `${noteFileName:{case:'lower'}}`、`${originalAttachmentFileName:{slugify:true}}`
+- `${date}`、`${time}`、`${datetime}` 支持 `momentJsFormat`，例如 `${date:{momentJsFormat:'YYYY-MM-DD'}}`
+- 可以混合使用多个占位符，例如 `${noteFileName}-${datetime}-${originalAttachmentFileName}`
+- `custom` 命名模式的实际行为是：先按模板把文件重命名，再按“原文件名”方式上传
+
+#### 常见模板示例
+
+- **自定义文件名模板**：`${noteFileName}-${datetime}-${originalAttachmentFileName}`
+- **上传目录**：`${noteFolderName}/${date}`
+- **备份路径**：`backup/${noteFolderName}/${noteFileName}`
 
 ### 2.1 上传渠道说明
 

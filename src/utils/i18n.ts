@@ -52,13 +52,19 @@ const translations: Record<Language, Translations> = {
 				},
 				uploadNameType: {
 					name: '文件命名方式',
-					desc: '选择文件命名方式',
+					desc: '选择文件命名方式；自定义模式会先按占位符重命名，再以原文件名方式上传',
 					options: {
 						default: '默认前缀_原名命名',
 						index: '仅前缀命名',
 						origin: '仅原名命名',
-						short: '短链接命名法'
+						short: '短链接命名法',
+						custom: '自定义占位符命名'
 					}
+				},
+				customUploadNamePattern: {
+					name: '自定义文件名模板',
+					desc: '仅在自定义命名时生效。会先根据占位符重命名文件，再使用原文件名方式上传',
+					placeholder: '${noteFileName}-${datetime}-${originalAttachmentFileName}'
 				},
 				returnFormat: {
 					name: '返回链接格式',
@@ -70,8 +76,8 @@ const translations: Record<Language, Translations> = {
 				},
 				uploadFolder: {
 					name: '上传目录',
-					desc: '上传目录，用相对路径表示（例如：img/test）',
-					placeholder: 'img/test'
+					desc: '上传目录，用相对路径表示，支持占位符（例如：${noteFolderName}/${noteFileName}）',
+					placeholder: '${noteFolderName}/${noteFileName}'
 				},
 				serverCompress: {
 					name: '服务端压缩',
@@ -167,9 +173,12 @@ const translations: Record<Language, Translations> = {
 				},
 				backupPath: {
 					name: '备份路径',
-					desc: '设置本地备份的存储路径（相对于库根目录）',
-					placeholder: 'attachments/backup'
+					desc: '设置本地备份的存储路径（相对于库根目录），支持占位符',
+					placeholder: 'backup/${noteFolderName}/${noteFileName}'
 				}
+			},
+			templates: {
+				hint: '支持占位符：${noteFileName} ${noteFolderName} ${noteFolderPath} ${noteFilePath} ${originalAttachmentFileName} ${originalAttachmentFileExtension} ${date} ${time} ${datetime} ${timestamp} ${uuid}'
 			},
 			language: {
 				name: '语言设置',
@@ -236,13 +245,19 @@ const translations: Record<Language, Translations> = {
 				},
 				uploadNameType: {
 					name: 'File naming method',
-					desc: 'Select file naming method',
+					desc: 'Select a file naming method. Custom mode renames the file with placeholders first, then uploads it using the original-name mode',
 					options: {
 						default: 'Default prefix_original name',
 						index: 'Prefix only',
 						origin: 'Original name only',
-						short: 'Short link'
+						short: 'Short link',
+						custom: 'Custom placeholder name'
 					}
+				},
+				customUploadNamePattern: {
+					name: 'Custom file name template',
+					desc: 'Used only in custom naming mode. The file is renamed with placeholders first, then uploaded using the original-name mode',
+					placeholder: '${noteFileName}-${datetime}-${originalAttachmentFileName}'
 				},
 				returnFormat: {
 					name: 'Return link format',
@@ -254,8 +269,8 @@ const translations: Record<Language, Translations> = {
 				},
 				uploadFolder: {
 					name: 'Upload folder',
-					desc: 'Upload folder, use relative path (e.g., img/test)',
-					placeholder: 'img/test'
+					desc: 'Upload folder using a relative path. Placeholders are supported (for example: ${noteFolderName}/${noteFileName})',
+					placeholder: '${noteFolderName}/${noteFileName}'
 				},
 				serverCompress: {
 					name: 'Server compression',
@@ -351,9 +366,12 @@ const translations: Record<Language, Translations> = {
 				},
 				backupPath: {
 					name: 'Backup path',
-					desc: 'Set local backup storage path (relative to vault root)',
-					placeholder: 'attachments/backup'
+					desc: 'Set local backup storage path relative to the vault root. Placeholders are supported',
+					placeholder: 'backup/${noteFolderName}/${noteFileName}'
 				}
+			},
+			templates: {
+				hint: 'Supported placeholders: ${noteFileName} ${noteFolderName} ${noteFolderPath} ${noteFilePath} ${originalAttachmentFileName} ${originalAttachmentFileExtension} ${date} ${time} ${datetime} ${timestamp} ${uuid}'
 			},
 			language: {
 				name: 'Language',
