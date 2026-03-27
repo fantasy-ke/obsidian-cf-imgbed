@@ -1,10 +1,11 @@
-import { Plugin } from 'obsidian';
+import { MarkdownView, Plugin } from 'obsidian';
 import { CFImageBedSettings, DEFAULT_SETTINGS } from './src/types';
 import { UploadService } from './src/upload/uploadService';
 import { ImageHandler } from './src/upload/imageHandler';
 import { EventHandlers } from './src/events/eventHandlers';
 import { CFImageBedSettingTab } from './src/settings/settingsTab';
 import { I18n } from './src/utils/i18n';
+import { parseDomainList } from './src/utils/domainUtils';
 
 export default class CFImageBedPlugin extends Plugin {
 	settings: CFImageBedSettings;
@@ -39,6 +40,18 @@ export default class CFImageBedPlugin extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id: 'upload-current-note-images',
+			name: this.i18n.t('commands.uploadCurrentNoteImages'),
+			checkCallback: (checking: boolean) => {
+				const hasMarkdownView = Boolean(this.app.workspace.getActiveViewOfType(MarkdownView));
+				if (!checking && hasMarkdownView) {
+					void this.imageHandler.uploadCurrentNoteImages();
+				}
+				return hasMarkdownView;
+			}
+		});
+
 		// 添加设置页面
 		this.addSettingTab(new CFImageBedSettingTab(this.app, this));
 	}
@@ -51,9 +64,15 @@ export default class CFImageBedPlugin extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings.excludedImageDomains = parseDomainList(
+			(this.settings.excludedImageDomains || []).join(',')
+		);
 	}
 
 	async saveSettings() {
+		this.settings.excludedImageDomains = parseDomainList(
+			(this.settings.excludedImageDomains || []).join(',')
+		);
 		await this.saveData(this.settings);
 	}
 }

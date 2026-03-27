@@ -27,6 +27,8 @@ export interface CFImageBedSettings {
 	enableClientCompress: boolean;
 	compressThreshold: number; // MB - 压缩阈值
 	targetSize: number; // MB - 期望大小
+	enableNetworkImageUpload: boolean;
+	excludedImageDomains: string[];
 	
 	// 用户体验配置
 	showUploadProgress: boolean;
@@ -69,6 +71,8 @@ export const DEFAULT_SETTINGS: CFImageBedSettings = {
 	enableClientCompress: false,
 	compressThreshold: 2, // 2MB
 	targetSize: 1, // 1MB
+	enableNetworkImageUpload: false,
+	excludedImageDomains: [],
 	
 	// 用户体验配置
 	showUploadProgress: true,

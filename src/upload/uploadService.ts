@@ -6,22 +6,31 @@ import { ClientWatermark } from '../utils/clientWatermark';
 export class UploadService {
 	constructor(private settings: CFImageBedSettings) {}
 
-	async uploadImage(file: File): Promise<string | null> {
+	async uploadImage(
+		file: File,
+		options: { showErrorNotice?: boolean } = {}
+	): Promise<string | null> {
 		if (!this.settings.apiUrl || (!this.settings.authCode && !this.settings.apiToken)) {
-			new Notice('请先配置 API URL，并填写认证码或 API Token');
+			if (options.showErrorNotice !== false) {
+				new Notice('请先配置 API URL，并填写认证码或 API Token');
+			}
 			return null;
 		}
 
 		try {
 			// 检查文件类型
 			if (!this.isAllowedFileType(file)) {
-				new Notice(`不支持的文件类型: ${file.type}`);
+				if (options.showErrorNotice !== false) {
+					new Notice(`不支持的文件类型: ${file.type}`);
+				}
 				return null;
 			}
 
 			// 检查文件大小
 			if (!this.isFileSizeAllowed(file)) {
-				new Notice(`文件大小超过限制: ${ClientCompressor.formatFileSize(file.size)}`);
+				if (options.showErrorNotice !== false) {
+					new Notice(`文件大小超过限制: ${ClientCompressor.formatFileSize(file.size)}`);
+				}
 				return null;
 			}
 
@@ -83,7 +92,7 @@ export class UploadService {
 			}
 		} catch (error) {
 			console.error('Image upload failed:', error);
-			if (this.settings.showErrorNotification) {
+			if (options.showErrorNotice !== false && this.settings.showErrorNotification) {
 				const errorMessage = error instanceof Error ? error.message : String(error);
 				new Notice(`Image upload failed: ${errorMessage}`, (this.settings.notificationDuration ?? 5) * 1000);
 			}

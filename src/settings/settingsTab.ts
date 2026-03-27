@@ -2,6 +2,7 @@ import { App, DropdownComponent, PluginSettingTab, Setting, SliderComponent, Tex
 import CFImageBedPlugin from '../../main';
 import { I18n } from '../utils/i18n';
 import { UploadChannel } from '../types';
+import { extractHostname, formatDomainList, parseDomainList } from '../utils/domainUtils';
 
 export class CFImageBedSettingTab extends PluginSettingTab {
 	plugin: CFImageBedPlugin;
@@ -409,6 +410,32 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.setDisabled(!this.plugin.settings.enableClientCompress)
 				.onChange(async (value: number) => {
 					this.plugin.settings.targetSize = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(container)
+			.setName(this.i18n.t('settings.advanced.enableNetworkImageUpload.name'))
+			.setDesc(this.i18n.t('settings.advanced.enableNetworkImageUpload.desc'))
+			.addToggle((toggle: ToggleComponent) => toggle
+				.setValue(this.plugin.settings.enableNetworkImageUpload)
+				.onChange(async (value: boolean) => {
+					this.plugin.settings.enableNetworkImageUpload = value;
+					await this.plugin.saveSettings();
+				}));
+
+		const autoExcludedDomain = extractHostname(this.plugin.settings.apiUrl);
+		const excludedDescSuffix = autoExcludedDomain
+			? `\n${this.i18n.getLanguage() === 'zh' ? '当前自动排除：' : 'Auto excluded:'} ${autoExcludedDomain}`
+			: '';
+
+		new Setting(container)
+			.setName(this.i18n.t('settings.advanced.excludedImageDomains.name'))
+			.setDesc(`${this.i18n.t('settings.advanced.excludedImageDomains.desc')}${excludedDescSuffix}`)
+			.addTextArea((text) => text
+				.setPlaceholder(this.i18n.t('settings.advanced.excludedImageDomains.placeholder'))
+				.setValue(formatDomainList(this.plugin.settings.excludedImageDomains || []))
+				.onChange(async (value: string) => {
+					this.plugin.settings.excludedImageDomains = parseDomainList(value);
 					await this.plugin.saveSettings();
 				}));
 	}

@@ -131,6 +131,15 @@ const translations: Record<Language, Translations> = {
 				targetSize: {
 					name: '期望大小',
 					desc: '设置压缩后图片大小期望值（MB）'
+				},
+				enableNetworkImageUpload: {
+					name: '启用网络图片上传',
+					desc: '开启后，粘贴外链图片或执行“上传当前文档所有图片”命令时，会先抓取外链并上传到自己的图床；失败时保持原链接'
+				},
+				excludedImageDomains: {
+					name: '网络图片排除域名',
+					desc: '这些域名的图片链接不会重复上传，支持逗号或换行分隔。当前 API URL 域名会自动加入排除列表',
+					placeholder: 'example.com, cdn.example.com'
 				}
 			},
 			userExperience: {
@@ -166,6 +175,9 @@ const translations: Record<Language, Translations> = {
 				name: '语言设置',
 				desc: '选择界面显示语言'
 			}
+		},
+		commands: {
+			uploadCurrentNoteImages: '上传当前文档所有图片到 CF ImageBed'
 		},
 		menu: {
 			uploadImage: '上传图片到 CF ImageBed'
@@ -303,6 +315,15 @@ const translations: Record<Language, Translations> = {
 				targetSize: {
 					name: 'Target size',
 					desc: 'Set expected size for compressed images (MB)'
+				},
+				enableNetworkImageUpload: {
+					name: 'Enable remote image upload',
+					desc: 'When enabled, pasted remote image links and the “upload current note images” command will fetch remote images and upload them to your image bed. Failed uploads keep the original link.'
+				},
+				excludedImageDomains: {
+					name: 'Excluded remote domains',
+					desc: 'Images from these domains will not be uploaded again. Separate domains with commas or new lines. The current API URL domain is always excluded automatically.',
+					placeholder: 'example.com, cdn.example.com'
 				}
 			},
 			userExperience: {
@@ -338,6 +359,9 @@ const translations: Record<Language, Translations> = {
 				name: 'Language',
 				desc: 'Select interface display language'
 			}
+		},
+		commands: {
+			uploadCurrentNoteImages: 'Upload current note images to CF ImageBed'
 		},
 		menu: {
 			uploadImage: 'Upload image to CF ImageBed'
@@ -392,4 +416,3 @@ export class I18n {
 }
 
 export const i18n = new I18n('zh');
-

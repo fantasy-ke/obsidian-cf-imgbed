@@ -6,12 +6,15 @@
 
 </div>
 
-An Obsidian plugin for uploading images to CloudFlare ImgBed service with multiple upload methods and flexible configuration options.
+An Obsidian plugin for uploading images to CloudFlare ImgBed with local image upload, remote image fetching, and batch replacement for images in the current note.
 
 ## Features
 
-- **Multiple Upload Methods**: Support drag & drop, paste, and file selection
+- **Multiple Upload Methods**: Support drag & drop, paste, right-click selection, and command-based batch upload
+- **Remote Image Capture**: Fetch remote images and upload them into your own image bed
+- **Batch Replacement**: Upload all images in the current note and replace links automatically
 - **Flexible Configuration**: Multiple upload channels and naming options
+- **Exclusion List**: Skip remote images from configured domains; the current image bed domain is excluded by default
 - **Quick Integration**: Automatically insert Markdown image links after upload
 - **Cross-Platform**: Support desktop and mobile devices
 - **Smart Handling**: Prevents duplicate content from Obsidian's default image handling
@@ -56,6 +59,12 @@ An Obsidian plugin for uploading images to CloudFlare ImgBed service with multip
 - **Server Compression**: Only configurable for the Telegram channel
 - **Auto Retry**: Automatically switch channels on failure
 
+### 2.2 Advanced options
+
+- **Enable Remote Image Upload**: When enabled, pasted markdown image links, HTML `<img>` tags, and plain image URLs will be fetched and uploaded to your own image bed
+- **Excluded Remote Domains**: Supports commas or new lines. Remote images from these domains are skipped to avoid duplicate uploads
+- **Auto-exclude Current Image Bed Domain**: The hostname from `API URL` is always excluded automatically
+
 ### 2.1 Upload channel overview
 
 | Channel | Advantages | Limitations |
@@ -68,7 +77,7 @@ An Obsidian plugin for uploading images to CloudFlare ImgBed service with multip
 
 ### 3. Upload Images
 
-The plugin supports three upload methods:
+The plugin supports five common workflows:
 
 #### Method 1: Drag & Drop
 1. Drag image files directly to Obsidian editor
@@ -79,9 +88,23 @@ The plugin supports three upload methods:
 2. Press `Ctrl+V` (Windows/Linux) or `Cmd+V` (Mac) in Obsidian editor
 3. Plugin will automatically upload and insert Markdown links
 
-#### Method 3: Right-click Upload
+#### Method 3: Paste remote image links
+1. Enable **Enable Remote Image Upload** in advanced settings
+2. Copy a markdown image link, an HTML `<img>` tag, or a direct image URL
+3. Paste it into the editor
+4. The plugin will fetch the remote image, upload it to your own image bed, and replace the link on success
+5. Failed uploads keep the original content unchanged
+
+#### Method 4: Right-click Upload
 1. Right-click in editor and select "Upload image to CF ImageBed"
 2. Choose the image file to upload
+
+#### Method 5: Batch upload all images in the current note
+1. Open the command palette
+2. Run **Upload current note images to CF ImageBed**
+3. The plugin scans Markdown and Wiki image references in the active note and uploads them in batch
+4. If **Enable Remote Image Upload** is enabled, remote images in the note are processed too
+5. Remote images from excluded domains are skipped, and failed uploads keep the original links
 
 ### 4. Mobile Usage
 
@@ -138,18 +161,17 @@ For detailed API documentation, please refer to CloudFlare ImgBed official [docu
 ## Version History
 
 <details>
-<summary><strong>v1.0.4 (Latest)</strong></summary>
+<summary><strong>v1.0.6 (Latest)</strong></summary>
 
 ### Features & Improvements
-- feat: Add watermark and compression features; enhance settings UI and validation
+- feat: Add remote image upload, excluded domain list, and current-note batch upload command
 
 #### Detailed Changes
-- New client-side watermark and compression processing
-- Added settings validation to ensure configuration correctness
-- Optimized settings UI with tabs and styles
-- Updated type definitions to include new configuration items
-- Added file type and size validation
-- Perform watermark and compression before upload
+- Added an advanced setting to control whether remote images should be re-uploaded
+- Added an excluded-domain list, with the current API hostname excluded automatically
+- Support pasted markdown image links, HTML image tags, and plain image URLs
+- Added a command to batch upload images from the current note and replace links automatically
+- Failed remote or batch uploads keep the original links unchanged
 
 </details>
 
