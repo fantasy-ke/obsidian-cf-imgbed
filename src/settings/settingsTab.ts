@@ -146,11 +146,6 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 					this.display();
 				}));
 
-		const channelTipSetting = new Setting(container)
-			.setName(this.i18n.t(`settings.basic.channelTips.${currentChannel}`))
-			.setDesc('');
-		channelTipSetting.settingEl.addClass('cf-channel-tip');
-
 		new Setting(container)
 			.setName(this.i18n.t('settings.basic.channelName.name'))
 			.setDesc(this.i18n.t('settings.basic.channelName.desc'))
@@ -263,7 +258,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.setName(this.i18n.t('settings.advanced.maxFileSize.name'))
 			.setDesc(this.i18n.t('settings.advanced.maxFileSize.desc'))
 			.addSlider((slider: SliderComponent) => slider
-				.setLimits(1, 50, 1)
+				.setLimits(1, 100, 1)
 				.setValue(this.plugin.settings.maxFileSize)
 				.setDynamicTooltip()
 				.onChange(async (value: number) => {

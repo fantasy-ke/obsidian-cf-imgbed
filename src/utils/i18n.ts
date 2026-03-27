@@ -50,13 +50,6 @@ const translations: Record<Language, Translations> = {
 					name: '分块大小（MB）',
 					desc: 'Telegram 默认 16MB，Discord 默认 8MB；仅在需要分块上传的渠道中生效'
 				},
-				channelTips: {
-					telegram: '完全免费、无限容量；大于 20MB 文件需分片存储，可选服务端压缩。',
-					cfr2: '无文件大小限制、企业级性能；超出 10G 免费额度后收费，需要绑定支付方式。',
-					s3: '选择多样、价格灵活；费用与限制取决于具体服务商。',
-					discord: '完全免费、简单易用；大于 10MB 文件需分片存储，默认分块 8MB。',
-					huggingface: '完全免费、支持大文件直传；需要 HuggingFace 账号。'
-				},
 				uploadNameType: {
 					name: '文件命名方式',
 					desc: '选择文件命名方式',
@@ -228,13 +221,6 @@ const translations: Record<Language, Translations> = {
 				chunkSizeMB: {
 					name: 'Chunk size (MB)',
 					desc: 'Telegram defaults to 16MB and Discord defaults to 8MB; only applies to chunked-upload channels'
-				},
-				channelTips: {
-					telegram: 'Free with virtually unlimited capacity; files larger than 20MB require chunk storage and can use server compression.',
-					cfr2: 'No file size limit and enterprise-grade performance; charges apply beyond the 10GB free tier and billing setup is required.',
-					s3: 'Flexible providers and pricing; actual cost and limits depend on your chosen vendor.',
-					discord: 'Free and easy to use; files larger than 10MB require chunk storage, default chunk size is 8MB.',
-					huggingface: 'Free and supports large direct uploads; requires a HuggingFace account.'
 				},
 				uploadNameType: {
 					name: 'File naming method',
