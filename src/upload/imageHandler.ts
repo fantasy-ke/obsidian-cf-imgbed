@@ -139,8 +139,8 @@ export class ImageHandler {
 
 		for (const reference of uploadableReferences) {
 			const uploadedUrl = reference.isRemote
-				? await this.uploadRemoteImage(reference.path, reference.altText)
-				: await this.uploadLocalImageReference(reference, activeFile.path);
+				? await this.uploadRemoteImage(reference.path, reference.altText, activeFile)
+				: await this.uploadLocalImageReference(reference, activeFile.path, activeFile);
 
 			if (!uploadedUrl) {
 				failedCount++;
@@ -296,13 +296,14 @@ export class ImageHandler {
 			new Notice('请先打开一个 Markdown 文件');
 			return;
 		}
+		const noteFile = this.app.workspace.getActiveFile();
 
 		const settings = this.getSettings?.();
 		if (settings?.showUploadProgress) {
 			new Notice('正在上传图片...');
 		}
 
-		const imageUrl = await this.uploadService.uploadImage(file);
+		const imageUrl = await this.uploadService.uploadImage(file, { noteFile });
 		if (!imageUrl) {
 			return;
 		}
@@ -335,10 +336,13 @@ export class ImageHandler {
 		urlRefs: ParsedImageReference[],
 		htmlImages: ClipboardHtmlImage[]
 	): Promise<boolean> {
+		const noteFile = this.app.workspace.getActiveFile();
+
 		if (markdownRefs.length > 0) {
 			const { updatedText, successCount, failedCount } = await this.replaceRemoteReferencesInText(
 				text,
-				markdownRefs
+				markdownRefs,
+				noteFile
 			);
 			editor.replaceSelection(updatedText);
 			this.showRemotePasteSummary(successCount, failedCount);
@@ -348,7 +352,8 @@ export class ImageHandler {
 		if (urlRefs.length > 0) {
 			const { updatedText, successCount, failedCount } = await this.replaceRemoteReferencesInText(
 				text,
-				urlRefs
+				urlRefs,
+				noteFile
 			);
 			editor.replaceSelection(updatedText);
 			this.showRemotePasteSummary(successCount, failedCount);
@@ -361,7 +366,7 @@ export class ImageHandler {
 			let failedCount = 0;
 
 			for (const image of htmlImages) {
-				const uploadedUrl = await this.uploadRemoteImage(image.url, image.altText);
+				const uploadedUrl = await this.uploadRemoteImage(image.url, image.altText, noteFile);
 				if (uploadedUrl) {
 					insertedLines.push(this.buildMarkdownImage(image.altText, uploadedUrl, this.getFallbackImageName(image.url)));
 					successCount++;
@@ -381,14 +386,15 @@ export class ImageHandler {
 
 	private async replaceRemoteReferencesInText(
 		text: string,
-		references: ParsedImageReference[]
+		references: ParsedImageReference[],
+		noteFile?: TFile | null
 	): Promise<{ updatedText: string; successCount: number; failedCount: number }> {
 		const replacements: TextReplacement[] = [];
 		let successCount = 0;
 		let failedCount = 0;
 
 		for (const reference of references) {
-			const uploadedUrl = await this.uploadRemoteImage(reference.path, reference.altText);
+			const uploadedUrl = await this.uploadRemoteImage(reference.path, reference.altText, noteFile);
 			if (!uploadedUrl) {
 				failedCount++;
 				continue;
@@ -409,10 +415,17 @@ export class ImageHandler {
 		};
 	}
 
-	private async uploadRemoteImage(url: string, altText: string): Promise<string | null> {
+	private async uploadRemoteImage(
+		url: string,
+		altText: string,
+		noteFile?: TFile | null
+	): Promise<string | null> {
 		try {
 			const file = await this.fetchRemoteImageFile(url, altText);
-			return await this.uploadService.uploadImage(file, { showErrorNotice: false });
+			return await this.uploadService.uploadImage(file, {
+				showErrorNotice: false,
+				noteFile
+			});
 		} catch (error) {
 			console.error('Remote image upload failed:', error);
 			return null;
@@ -421,7 +434,8 @@ export class ImageHandler {
 
 	private async uploadLocalImageReference(
 		reference: ParsedImageReference,
-		sourcePath: string
+		sourcePath: string,
+		noteFile?: TFile | null
 	): Promise<string | null> {
 		const localFile = this.resolveLocalFile(reference.path, sourcePath);
 		if (!localFile) {
@@ -429,7 +443,10 @@ export class ImageHandler {
 		}
 
 		const uploadFile = await this.createFileFromTFile(localFile);
-		return this.uploadService.uploadImage(uploadFile, { showErrorNotice: false });
+		return this.uploadService.uploadImage(uploadFile, {
+			showErrorNotice: false,
+			noteFile
+		});
 	}
 
 	private resolveLocalFile(linkPath: string, sourcePath: string): TFile | null {

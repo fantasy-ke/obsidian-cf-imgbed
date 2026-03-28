@@ -1,4 +1,4 @@
-import { App, Notice, normalizePath, requestUrl, TFile } from 'obsidian';
+import { App, Notice, normalizePath, requestUrl, TFile, TFolder } from 'obsidian';
 import { CFImageBedSettings } from '../types';
 import { ClientCompressor } from '../utils/clientCompressor';
 import { ClientWatermark } from '../utils/clientWatermark';
@@ -339,12 +339,7 @@ export class UploadService {
 	private async saveLocalBackup(file: File, backupPath: string): Promise<void> {
 		const normalized = normalizePath(backupPath);
 		const arrayBuffer = await file.arrayBuffer();
-		// 确保文件夹存在
-		try {
-			await this.app.vault.createFolder(normalized);
-		} catch {
-			// Folder may already exist, ignore error
-		}
+		await this.ensureFolderExists(normalized);
 		const targetFilePath = normalizePath(`${normalized}/${file.name}`);
 		// 如果存在则覆盖
 		const existing = this.app.vault.getAbstractFileByPath(targetFilePath);
@@ -352,6 +347,28 @@ export class UploadService {
 			await this.app.vault.modifyBinary(existing, arrayBuffer);
 		} else {
 			await this.app.vault.createBinary(targetFilePath, arrayBuffer);
+		}
+	}
+
+	private async ensureFolderExists(folderPath: string): Promise<void> {
+		const normalizedFolderPath = normalizePath(folderPath).replace(/^\/+|\/+$/g, '');
+		if (!normalizedFolderPath) {
+			return;
+		}
+
+		let currentPath = '';
+		for (const segment of normalizedFolderPath.split('/')) {
+			currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+			const existing = this.app.vault.getAbstractFileByPath(currentPath);
+
+			if (!existing) {
+				await this.app.vault.createFolder(currentPath);
+				continue;
+			}
+
+			if (!(existing instanceof TFolder)) {
+				throw new Error(`备份路径冲突：${currentPath} 已存在同名文件`);
+			}
 		}
 	}
 

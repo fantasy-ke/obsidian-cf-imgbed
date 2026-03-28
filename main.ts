@@ -33,7 +33,7 @@ export default class CFImageBedPlugin extends Plugin {
 		// 移动端专用命令：支持相机拍照和相册选择
 		this.addCommand({
 			id: 'upload-image-mobile',
-			name: '📷 拍照或相册选择',
+			name: this.i18n.t('commands.uploadImageMobile'),
 			icon: 'camera',
 			callback: () => {
 				this.imageHandler.selectImageForMobile();
@@ -64,15 +64,29 @@ export default class CFImageBedPlugin extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-		this.settings.excludedImageDomains = parseDomainList(
-			(this.settings.excludedImageDomains || []).join(',')
+		this.settings.excludedImageDomains = this.normalizeExcludedImageDomains(
+			this.settings.excludedImageDomains
 		);
+		this.i18n?.setLanguage(this.settings.language || 'zh');
 	}
 
 	async saveSettings() {
-		this.settings.excludedImageDomains = parseDomainList(
-			(this.settings.excludedImageDomains || []).join(',')
+		this.settings.excludedImageDomains = this.normalizeExcludedImageDomains(
+			this.settings.excludedImageDomains
 		);
+		this.i18n?.setLanguage(this.settings.language || 'zh');
 		await this.saveData(this.settings);
+	}
+
+	private normalizeExcludedImageDomains(value: string[] | string | undefined): string[] {
+		if (Array.isArray(value)) {
+			return parseDomainList(value.join(','));
+		}
+
+		if (typeof value === 'string') {
+			return parseDomainList(value);
+		}
+
+		return [];
 	}
 }

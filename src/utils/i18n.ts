@@ -186,6 +186,7 @@ const translations: Record<Language, Translations> = {
 			}
 		},
 		commands: {
+			uploadImageMobile: '📷 拍照或相册选择',
 			uploadCurrentNoteImages: '上传当前文档所有图片到 CF ImageBed'
 		},
 		menu: {
@@ -379,6 +380,7 @@ const translations: Record<Language, Translations> = {
 			}
 		},
 		commands: {
+			uploadImageMobile: '📷 Take photo or choose from gallery',
 			uploadCurrentNoteImages: 'Upload current note images to CF ImageBed'
 		},
 		menu: {
