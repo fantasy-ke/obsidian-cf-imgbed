@@ -16,8 +16,8 @@ export class SettingsValidator {
 			errors.push('认证码和 API Token 至少填写一项');
 		}
 
-		if (settings.chunkSizeMB < 1 || settings.chunkSizeMB > 100) {
-			errors.push('分块大小应在 1-100 MB 之间');
+		if (settings.chunkSizeMB < 0 || settings.chunkSizeMB > 100) {
+			errors.push('分块大小应在 0-100 MB 之间');
 		}
 
 		// 验证文件大小

@@ -52,11 +52,11 @@ An Obsidian plugin for uploading images to CloudFlare ImgBed with local image up
 
 - **Upload Channel**: Choose `telegram`, `cfr2`, `s3`, `discord`, or `huggingface`
 - **Channel Name**: Specify a concrete channel instance in multi-channel deployments
-- **Chunk Size**: Telegram defaults to 16MB, Discord defaults to 8MB; only shown for chunk-capable channels
+- **Chunk Size**: Always shown. Telegram defaults to 16MB, Discord to 8MB, and other channels default to 0. `0` disables chunked upload
 - **File Naming**: Select file naming rules. In `custom` mode, the file is renamed with placeholders first, then uploaded using the original-name mode
 - **Return Format**: Choose return link format
 - **Upload Folder**: Specify upload directory (optional). Placeholders are supported
-- **Server Compression**: Only configurable for the Telegram channel
+- **Server Compression**: Always shown, only editable for the Telegram channel, and disabled by default
 - **Auto Retry**: Automatically switch channels on failure
 
 ### 2.2 Advanced options
@@ -172,6 +172,7 @@ This plugin uses CloudFlare ImgBed's upload API with the following parameters:
 
 - Telegram: default chunk size is **16MB**
 - Discord: default chunk size is **8MB**
+- Other channels: default chunk size is **0**, which disables chunked upload
 - HuggingFace: usually supports large direct uploads without client-side chunking
 - Cloudflare R2 / S3: usually do not require client-side chunking
 

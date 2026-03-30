@@ -32,7 +32,7 @@ const translations: Record<Language, Translations> = {
 				},
 				uploadChannel: {
 					name: '上传渠道',
-					desc: '选择上传渠道，不同渠道会显示不同的专属参数',
+					desc: '选择上传渠道',
 					options: {
 						telegram: 'Telegram',
 						cfr2: 'Cloudflare R2',
@@ -48,7 +48,7 @@ const translations: Record<Language, Translations> = {
 				},
 				chunkSizeMB: {
 					name: '分块大小（MB）',
-					desc: 'Telegram 默认 16MB，Discord 默认 8MB；仅在需要分块上传的渠道中生效'
+					desc: '0 表示关闭分块上传。Telegram 默认 16MB，Discord 默认 8MB，其他默认 0'
 				},
 				uploadNameType: {
 					name: '文件命名方式',
@@ -63,7 +63,7 @@ const translations: Record<Language, Translations> = {
 				},
 				customUploadNamePattern: {
 					name: '自定义文件名模板',
-					desc: '仅在自定义命名时生效。会先根据占位符重命名文件，再使用原文件名方式上传',
+					desc: '仅在自定义命名时生效',
 					placeholder: '${noteFileName}-${datetime}-${originalAttachmentFileName}'
 				},
 				returnFormat: {
@@ -76,12 +76,12 @@ const translations: Record<Language, Translations> = {
 				},
 				uploadFolder: {
 					name: '上传目录',
-					desc: '上传目录，用相对路径表示，支持占位符（例如：${noteFolderName}/${noteFileName}）',
+					desc: '上传目录，使用相对路径',
 					placeholder: '${noteFolderName}/${noteFileName}'
 				},
 				serverCompress: {
 					name: '服务端压缩',
-					desc: '启用服务端压缩（仅针对 Telegram 渠道的图片文件）'
+					desc: '仅 Telegram 渠道可修改，默认关闭'
 				},
 				autoRetry: {
 					name: '自动重试',
@@ -173,12 +173,12 @@ const translations: Record<Language, Translations> = {
 				},
 				backupPath: {
 					name: '备份路径',
-					desc: '设置本地备份的存储路径（相对于库根目录），支持占位符',
+					desc: '相对于库根目录',
 					placeholder: 'backup/${noteFolderName}/${noteFileName}'
 				}
 			},
 			templates: {
-				hint: '支持占位符：${noteFileName} ${noteFolderName} ${noteFolderPath} ${noteFilePath} ${originalAttachmentFileName} ${originalAttachmentFileExtension} ${date} ${time} ${datetime} ${timestamp} ${uuid}'
+				hint: '支持占位符，详见 README'
 			},
 			language: {
 				name: '语言设置',
@@ -226,7 +226,7 @@ const translations: Record<Language, Translations> = {
 				},
 				uploadChannel: {
 					name: 'Upload channel',
-					desc: 'Select an upload channel; channel-specific options will appear dynamically',
+					desc: 'Select an upload channel',
 					options: {
 						telegram: 'Telegram',
 						cfr2: 'Cloudflare R2',
@@ -242,7 +242,7 @@ const translations: Record<Language, Translations> = {
 				},
 				chunkSizeMB: {
 					name: 'Chunk size (MB)',
-					desc: 'Telegram defaults to 16MB and Discord defaults to 8MB; only applies to chunked-upload channels'
+					desc: '0 disables chunked upload. Telegram defaults to 16MB, Discord to 8MB, others to 0'
 				},
 				uploadNameType: {
 					name: 'File naming method',
@@ -257,7 +257,7 @@ const translations: Record<Language, Translations> = {
 				},
 				customUploadNamePattern: {
 					name: 'Custom file name template',
-					desc: 'Used only in custom naming mode. The file is renamed with placeholders first, then uploaded using the original-name mode',
+					desc: 'Used only in custom naming mode',
 					placeholder: '${noteFileName}-${datetime}-${originalAttachmentFileName}'
 				},
 				returnFormat: {
@@ -270,12 +270,12 @@ const translations: Record<Language, Translations> = {
 				},
 				uploadFolder: {
 					name: 'Upload folder',
-					desc: 'Upload folder using a relative path. Placeholders are supported (for example: ${noteFolderName}/${noteFileName})',
+					desc: 'Upload folder using a relative path',
 					placeholder: '${noteFolderName}/${noteFileName}'
 				},
 				serverCompress: {
 					name: 'Server compression',
-					desc: 'Enable server-side compression (only for Telegram channel image files)'
+					desc: 'Only editable for the Telegram channel and disabled by default'
 				},
 				autoRetry: {
 					name: 'Auto retry',
@@ -367,12 +367,12 @@ const translations: Record<Language, Translations> = {
 				},
 				backupPath: {
 					name: 'Backup path',
-					desc: 'Set local backup storage path relative to the vault root. Placeholders are supported',
+					desc: 'Relative to the vault root',
 					placeholder: 'backup/${noteFolderName}/${noteFileName}'
 				}
 			},
 			templates: {
-				hint: 'Supported placeholders: ${noteFileName} ${noteFolderName} ${noteFolderPath} ${noteFilePath} ${originalAttachmentFileName} ${originalAttachmentFileExtension} ${date} ${time} ${datetime} ${timestamp} ${uuid}'
+				hint: 'Placeholders supported. See README for details'
 			},
 			language: {
 				name: 'Language',

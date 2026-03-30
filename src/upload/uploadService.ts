@@ -118,7 +118,11 @@ export class UploadService {
 			return false;
 		}
 
-		const chunkSizeBytes = Math.max(1, this.settings.chunkSizeMB) * 1024 * 1024;
+		if (this.settings.chunkSizeMB <= 0) {
+			return false;
+		}
+
+		const chunkSizeBytes = this.settings.chunkSizeMB * 1024 * 1024;
 		return file.size > chunkSizeBytes;
 	}
 
@@ -176,7 +180,11 @@ export class UploadService {
 	}
 
 	private async chunkedUpload(file: File, runtimeConfig: UploadRuntimeConfig): Promise<unknown> {
-		const chunkSizeBytes = Math.max(1, this.settings.chunkSizeMB) * 1024 * 1024;
+		if (this.settings.chunkSizeMB <= 0) {
+			throw new Error('分块大小必须大于 0 才能启用分块上传');
+		}
+
+		const chunkSizeBytes = this.settings.chunkSizeMB * 1024 * 1024;
 		const totalChunks = Math.ceil(file.size / chunkSizeBytes);
 		const originalFileType = file.type || 'application/octet-stream';
 

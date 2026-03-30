@@ -56,7 +56,7 @@ export const DEFAULT_SETTINGS: CFImageBedSettings = {
 	customUploadNamePattern: '${noteFileName}-${datetime}-${originalAttachmentFileName}',
 	returnFormat: 'default',
 	uploadFolder: '',
-	serverCompress: true,
+	serverCompress: false,
 	autoRetry: true,
 	chunkSizeMB: 16,
 	

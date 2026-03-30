@@ -90,8 +90,12 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 	
 	private createBasicSettings(container: HTMLElement): void {
 		const currentChannel = this.plugin.settings.uploadChannel;
-		const chunkDefault = this.getDefaultChunkSize(currentChannel);
 		const templateHint = this.i18n.t('settings.templates.hint');
+
+		if (currentChannel !== 'telegram' && this.plugin.settings.serverCompress) {
+			this.plugin.settings.serverCompress = false;
+			void this.plugin.saveSettings();
+		}
 
 		// API URL 设置
 		new Setting(container)
@@ -141,8 +145,9 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.uploadChannel)
 				.onChange(async (value: UploadChannel) => {
 					this.plugin.settings.uploadChannel = value;
-					if (this.shouldShowChunkSettings(value)) {
-						this.plugin.settings.chunkSizeMB = this.getDefaultChunkSize(value);
+					this.plugin.settings.chunkSizeMB = this.getDefaultChunkSize(value);
+					if (value !== 'telegram') {
+						this.plugin.settings.serverCompress = false;
 					}
 					await this.plugin.saveSettings();
 					this.display();
@@ -159,19 +164,17 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		if (this.shouldShowChunkSettings(currentChannel)) {
-			new Setting(container)
-				.setName(this.i18n.t('settings.basic.chunkSizeMB.name'))
-				.setDesc(`${this.i18n.t('settings.basic.chunkSizeMB.desc')}（当前默认值：${chunkDefault}）`)
-				.addSlider((slider: SliderComponent) => slider
-					.setLimits(1, 32, 1)
-					.setValue(this.plugin.settings.chunkSizeMB || chunkDefault)
-					.setDynamicTooltip()
-					.onChange(async (value: number) => {
-						this.plugin.settings.chunkSizeMB = value;
-						await this.plugin.saveSettings();
-					}));
-		}
+		new Setting(container)
+			.setName(this.i18n.t('settings.basic.chunkSizeMB.name'))
+			.setDesc(this.i18n.t('settings.basic.chunkSizeMB.desc'))
+			.addSlider((slider: SliderComponent) => slider
+				.setLimits(0, 32, 1)
+				.setValue(this.plugin.settings.chunkSizeMB)
+				.setDynamicTooltip()
+				.onChange(async (value: number) => {
+					this.plugin.settings.chunkSizeMB = value;
+					await this.plugin.saveSettings();
+				}));
 
 		// 文件命名方式设置
 		new Setting(container)
@@ -231,18 +234,17 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		if (currentChannel === 'telegram') {
-			// 服务端压缩设置
-			new Setting(container)
-				.setName(this.i18n.t('settings.basic.serverCompress.name'))
-				.setDesc(this.i18n.t('settings.basic.serverCompress.desc'))
-				.addToggle((toggle: ToggleComponent) => toggle
-					.setValue(this.plugin.settings.serverCompress)
-					.onChange(async (value: boolean) => {
-						this.plugin.settings.serverCompress = value;
-						await this.plugin.saveSettings();
-					}));
-		}
+		// 服务端压缩设置
+		new Setting(container)
+			.setName(this.i18n.t('settings.basic.serverCompress.name'))
+			.setDesc(this.i18n.t('settings.basic.serverCompress.desc'))
+			.addToggle((toggle: ToggleComponent) => toggle
+				.setValue(currentChannel === 'telegram' ? this.plugin.settings.serverCompress : false)
+				.setDisabled(currentChannel !== 'telegram')
+				.onChange(async (value: boolean) => {
+					this.plugin.settings.serverCompress = value;
+					await this.plugin.saveSettings();
+				}));
 
 		// 自动重试设置
 		new Setting(container)
@@ -256,10 +258,6 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				}));
 	}
 
-	private shouldShowChunkSettings(channel: UploadChannel): boolean {
-		return channel === 'telegram' || channel === 'discord';
-	}
-
 	private getDefaultChunkSize(channel: UploadChannel): number {
 		if (channel === 'discord') {
 			return 8;
@@ -269,7 +267,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			return 16;
 		}
 
-		return 16;
+		return 0;
 	}
 	
 	private createAdvancedSettings(container: HTMLElement): void {
