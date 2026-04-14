@@ -203,7 +203,23 @@ An image upload plugin for Obsidian that uploads images to CloudFlare ImgBed. It
 ## 版本更新历史
 
 <details>
-<summary><strong>v1.0.6 (最新版本)</strong></summary>
+<summary><strong>v1.0.7 (最新版本)</strong></summary>
+
+### 新功能与优化
+- feat: 完善 Obsidian 社区审核相关适配与多语言体验
+
+#### 详细变更
+- README 顶部新增英文简介，并补充语言切换链接在 Obsidian 中会跳转浏览器的说明
+- 插件命名调整为 `CF ImageBed for Obsidian`
+- 默认语言改为优先读取 Obsidian `getLanguage()`
+- 上传与配置校验提示文案接入 i18n（中英文）
+- 上传服务与图片处理的调试日志改为仅开发环境输出
+- `manifest.json` 最低版本提升到 `1.8.7`，并清理不必要的 `authorUrl` / `fundingUrl`
+
+</details>
+
+<details>
+<summary><strong>v1.0.6</strong></summary>
 
 ### 新功能与优化
 - feat: 新增网络图片上传、排除域名列表和当前文档批量上传命令

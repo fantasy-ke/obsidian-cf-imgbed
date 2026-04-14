@@ -202,7 +202,23 @@ For detailed API documentation, please refer to CloudFlare ImgBed official [docu
 ## Version History
 
 <details>
-<summary><strong>v1.0.6 (Latest)</strong></summary>
+<summary><strong>v1.0.7 (Latest)</strong></summary>
+
+### Features & Improvements
+- feat: Improve Obsidian review compliance and multilingual UX
+
+#### Detailed Changes
+- Added an English intro at the top of README and clarified that language-switch links open in browser inside Obsidian
+- Updated plugin naming to `CF ImageBed for Obsidian`
+- Default language now prefers Obsidian `getLanguage()`
+- Localized upload and settings-validation notices with i18n (zh/en)
+- Switched upload/image-processing debug logs to development builds only
+- Updated `manifest.json` minimum app version to `1.8.7`, and removed unnecessary `authorUrl` / `fundingUrl`
+
+</details>
+
+<details>
+<summary><strong>v1.0.6</strong></summary>
 
 ### Features & Improvements
 - feat: Add remote image upload, excluded domain list, and current-note batch upload command
