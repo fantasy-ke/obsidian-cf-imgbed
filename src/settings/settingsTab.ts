@@ -306,7 +306,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 					this.plugin.settings.enableWatermark = value;
 					await this.plugin.saveSettings();
 					// 不刷新页面，通过控件的 disabled 逻辑生效
-					const fields = container.querySelectorAll('input, select');
+					const fields = container.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select');
 					fields.forEach((el) => {
 						const label = (el.closest('.setting-item')?.querySelector('.setting-item-name')?.textContent || '').trim();
 						const dependent = [
@@ -316,7 +316,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 							this.i18n.t('settings.advanced.watermarkOpacity.name')
 						];
 						if (dependent.some(d => label.includes(d))) {
-							(el as HTMLInputElement | HTMLSelectElement).disabled = !value;
+							el.disabled = !value;
 						}
 					});
 				}));

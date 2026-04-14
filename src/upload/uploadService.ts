@@ -298,18 +298,22 @@ export class UploadService {
 	}
 
 	private extractSrc(result: unknown): string | null {
-		if (Array.isArray(result) && result[0] && typeof result[0] === 'object' && 'src' in result[0]) {
-			return String((result[0] as { src?: string }).src || '');
+		if (Array.isArray(result) && result[0] && this.isRecord(result[0])) {
+			const src = this.readString(result[0], 'src');
+			if (src) {
+				return src;
+			}
 		}
 
-		if (result && typeof result === 'object') {
-			if ('src' in result) {
-				return String((result as { src?: string }).src || '');
+		if (this.isRecord(result)) {
+			const src = this.readString(result, 'src');
+			if (src) {
+				return src;
 			}
 
-			if ('data' in result && Array.isArray((result as { data?: unknown[] }).data)) {
-				const first = (result as { data?: Array<{ src?: string }> }).data?.[0];
-				return first?.src || null;
+			const data = result.data;
+			if (Array.isArray(data) && data[0] && this.isRecord(data[0])) {
+				return this.readString(data[0], 'src');
 			}
 		}
 
@@ -337,11 +341,20 @@ export class UploadService {
 	}
 
 	private extractUploadId(result: unknown): string | null {
-		if (result && typeof result === 'object' && 'uploadId' in result) {
-			return String((result as { uploadId?: string }).uploadId || '');
+		if (this.isRecord(result)) {
+			return this.readString(result, 'uploadId');
 		}
 
 		return null;
+	}
+
+	private isRecord(value: unknown): value is Record<string, unknown> {
+		return typeof value === 'object' && value !== null;
+	}
+
+	private readString(record: Record<string, unknown>, key: string): string | null {
+		const value = record[key];
+		return typeof value === 'string' ? value : null;
 	}
 
 	private async saveLocalBackup(file: File, backupPath: string): Promise<void> {

@@ -25,10 +25,19 @@ export class ImageHandler {
         private i18n?: I18n
     ) {}
 
-	async uploadImageFromFile(file: File, deleteLocal: boolean = false): Promise<void> {
+	async uploadImageFromFile(file: File, deleteLocal = false): Promise<void> {
 		void deleteLocal;
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		await this.uploadImageToEditor(file, activeView?.editor);
+	}
+
+	private getInputFileFromEvent(event: Event): File | null {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return null;
+		}
+
+		return target.files?.[0] ?? null;
 	}
 
 	async uploadImageAtCursor(file: File): Promise<void> {
@@ -182,7 +191,7 @@ export class ImageHandler {
 		}
 		
 		input.onchange = (e) => {
-			const file = (e.target as HTMLInputElement).files?.[0];
+			const file = this.getInputFileFromEvent(e);
 			if (file) {
 				// 按钮上传时不删除本地文件
 				void this.uploadImageFromFile(file, false);
@@ -242,7 +251,7 @@ export class ImageHandler {
 			input.accept = 'image/*';
 			input.capture = 'environment';
 			input.onchange = (e) => {
-				const file = (e.target as HTMLInputElement).files?.[0];
+				const file = this.getInputFileFromEvent(e);
 				if (file) {
 					void this.uploadImageFromFile(file, false);
 				}
@@ -260,7 +269,7 @@ export class ImageHandler {
 			input.multiple = false;
 			// 不设置capture属性，这样会打开相册而不是相机
 			input.onchange = (e) => {
-				const file = (e.target as HTMLInputElement).files?.[0];
+				const file = this.getInputFileFromEvent(e);
 				if (file) {
 					void this.uploadImageFromFile(file, false);
 				}
