@@ -22,8 +22,13 @@ const translations: Record<Language, Translations> = {
 				},
 				authCode: {
 					name: '认证码',
-					desc: '上传认证码',
+					desc: '上传认证码（未填写 API Token 时必填）',
 					placeholder: 'your_authCode'
+				},
+				apiToken: {
+					name: 'API Token',
+					desc: 'API Token 认证（需要 upload 权限，优先于认证码）',
+					placeholder: 'your_api_token'
 				},
 				uploadChannel: {
 					name: '上传渠道',
@@ -31,18 +36,35 @@ const translations: Record<Language, Translations> = {
 					options: {
 						telegram: 'Telegram',
 						cfr2: 'Cloudflare R2',
-						s3: 'S3'
+						s3: 'S3 兼容存储',
+						discord: 'Discord',
+						huggingface: 'HuggingFace'
 					}
+				},
+				channelName: {
+					name: '渠道名称',
+					desc: '指定具体的渠道实例，适用于多渠道场景',
+					placeholder: '例如：my-channel'
+				},
+				chunkSizeMB: {
+					name: '分块大小（MB）',
+					desc: '0 表示关闭分块上传。Telegram 默认 16MB，Discord 默认 8MB，其他默认 0'
 				},
 				uploadNameType: {
 					name: '文件命名方式',
-					desc: '选择文件命名方式',
+					desc: '选择文件命名方式；自定义模式会先按占位符重命名，再以原文件名方式上传',
 					options: {
 						default: '默认前缀_原名命名',
 						index: '仅前缀命名',
 						origin: '仅原名命名',
-						short: '短链接命名法'
+						short: '短链接命名法',
+						custom: '自定义占位符命名'
 					}
+				},
+				customUploadNamePattern: {
+					name: '自定义文件名模板',
+					desc: '仅在自定义命名时生效',
+					placeholder: '${noteFileName}-${datetime}-${originalAttachmentFileName}'
 				},
 				returnFormat: {
 					name: '返回链接格式',
@@ -54,12 +76,12 @@ const translations: Record<Language, Translations> = {
 				},
 				uploadFolder: {
 					name: '上传目录',
-					desc: '上传目录，用相对路径表示（例如：img/test）',
-					placeholder: 'img/test'
+					desc: '上传目录，使用相对路径',
+					placeholder: '${noteFolderName}/${noteFileName}'
 				},
 				serverCompress: {
 					name: '服务端压缩',
-					desc: '启用服务端压缩（仅针对 Telegram 渠道的图片文件）'
+					desc: '仅 Telegram 渠道可修改，默认关闭'
 				},
 				autoRetry: {
 					name: '自动重试',
@@ -115,6 +137,15 @@ const translations: Record<Language, Translations> = {
 				targetSize: {
 					name: '期望大小',
 					desc: '设置压缩后图片大小期望值（MB）'
+				},
+				enableNetworkImageUpload: {
+					name: '启用网络图片上传',
+					desc: '开启后，粘贴外链图片或执行“上传当前文档所有图片”命令时，会先抓取外链并上传到自己的图床；失败时保持原链接'
+				},
+				excludedImageDomains: {
+					name: '网络图片排除域名',
+					desc: '这些域名的图片链接不会重复上传，支持逗号或换行分隔。当前 API URL 域名会自动加入排除列表',
+					placeholder: 'example.com, cdn.example.com'
 				}
 			},
 			userExperience: {
@@ -142,14 +173,21 @@ const translations: Record<Language, Translations> = {
 				},
 				backupPath: {
 					name: '备份路径',
-					desc: '设置本地备份的存储路径（相对于库根目录）',
-					placeholder: 'attachments/backup'
+					desc: '相对于库根目录',
+					placeholder: 'backup/${noteFolderName}/${noteFileName}'
 				}
+			},
+			templates: {
+				hint: '支持占位符，详见 README'
 			},
 			language: {
 				name: '语言设置',
 				desc: '选择界面显示语言'
 			}
+		},
+		commands: {
+			uploadImageMobile: '📷 拍照或相册选择',
+			uploadCurrentNoteImages: '上传当前文档所有图片到 CF ImageBed'
 		},
 		menu: {
 			uploadImage: '上传图片到 CF ImageBed'
@@ -178,27 +216,49 @@ const translations: Record<Language, Translations> = {
 				},
 				authCode: {
 					name: 'Auth code',
-					desc: 'Upload authentication code',
+					desc: 'Upload authentication code (required when API token is empty)',
 					placeholder: 'Your auth code'
+				},
+				apiToken: {
+					name: 'API token',
+					desc: 'API token authentication (requires upload permission and takes precedence over auth code)',
+					placeholder: 'Your API token'
 				},
 				uploadChannel: {
 					name: 'Upload channel',
-					desc: 'Select upload channel',
+					desc: 'Select an upload channel',
 					options: {
 						telegram: 'Telegram',
 						cfr2: 'Cloudflare R2',
-						s3: 'S3'
+						s3: 'S3 compatible storage',
+						discord: 'Discord',
+						huggingface: 'HuggingFace'
 					}
+				},
+				channelName: {
+					name: 'Channel name',
+					desc: 'Specify a concrete channel instance for multi-channel deployments',
+					placeholder: 'e.g. my-channel'
+				},
+				chunkSizeMB: {
+					name: 'Chunk size (MB)',
+					desc: '0 disables chunked upload. Telegram defaults to 16MB, Discord to 8MB, others to 0'
 				},
 				uploadNameType: {
 					name: 'File naming method',
-					desc: 'Select file naming method',
+					desc: 'Select a file naming method. Custom mode renames the file with placeholders first, then uploads it using the original-name mode',
 					options: {
 						default: 'Default prefix_original name',
 						index: 'Prefix only',
 						origin: 'Original name only',
-						short: 'Short link'
+						short: 'Short link',
+						custom: 'Custom placeholder name'
 					}
+				},
+				customUploadNamePattern: {
+					name: 'Custom file name template',
+					desc: 'Used only in custom naming mode',
+					placeholder: '${noteFileName}-${datetime}-${originalAttachmentFileName}'
 				},
 				returnFormat: {
 					name: 'Return link format',
@@ -210,12 +270,12 @@ const translations: Record<Language, Translations> = {
 				},
 				uploadFolder: {
 					name: 'Upload folder',
-					desc: 'Upload folder, use relative path (e.g., img/test)',
-					placeholder: 'img/test'
+					desc: 'Upload folder using a relative path',
+					placeholder: '${noteFolderName}/${noteFileName}'
 				},
 				serverCompress: {
 					name: 'Server compression',
-					desc: 'Enable server-side compression (only for Telegram channel image files)'
+					desc: 'Only editable for the Telegram channel and disabled by default'
 				},
 				autoRetry: {
 					name: 'Auto retry',
@@ -271,6 +331,15 @@ const translations: Record<Language, Translations> = {
 				targetSize: {
 					name: 'Target size',
 					desc: 'Set expected size for compressed images (MB)'
+				},
+				enableNetworkImageUpload: {
+					name: 'Enable remote image upload',
+					desc: 'When enabled, pasted remote image links and the “upload current note images” command will fetch remote images and upload them to your image bed. Failed uploads keep the original link.'
+				},
+				excludedImageDomains: {
+					name: 'Excluded remote domains',
+					desc: 'Images from these domains will not be uploaded again. Separate domains with commas or new lines. The current API URL domain is always excluded automatically.',
+					placeholder: 'example.com, cdn.example.com'
 				}
 			},
 			userExperience: {
@@ -298,14 +367,21 @@ const translations: Record<Language, Translations> = {
 				},
 				backupPath: {
 					name: 'Backup path',
-					desc: 'Set local backup storage path (relative to vault root)',
-					placeholder: 'attachments/backup'
+					desc: 'Relative to the vault root',
+					placeholder: 'backup/${noteFolderName}/${noteFileName}'
 				}
+			},
+			templates: {
+				hint: 'Placeholders supported. See README for details'
 			},
 			language: {
 				name: 'Language',
 				desc: 'Select interface display language'
 			}
+		},
+		commands: {
+			uploadImageMobile: '📷 Take photo or choose from gallery',
+			uploadCurrentNoteImages: 'Upload current note images to CF ImageBed'
 		},
 		menu: {
 			uploadImage: 'Upload image to CF ImageBed'
@@ -360,4 +436,3 @@ export class I18n {
 }
 
 export const i18n = new I18n('zh');
-

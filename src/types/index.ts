@@ -1,13 +1,19 @@
+export type UploadChannel = 'telegram' | 'cfr2' | 's3' | 'discord' | 'huggingface';
+
 export interface CFImageBedSettings {
 	// 基础配置
 	apiUrl: string;
 	authCode: string;
-	uploadChannel: string;
+	apiToken: string;
+	uploadChannel: UploadChannel;
+	channelName: string;
 	uploadNameType: string;
+	customUploadNamePattern: string;
 	returnFormat: string;
 	uploadFolder: string;
 	serverCompress: boolean;
 	autoRetry: boolean;
+	chunkSizeMB: number;
 	
 	// 高级配置
 	maxFileSize: number; // MB
@@ -22,6 +28,8 @@ export interface CFImageBedSettings {
 	enableClientCompress: boolean;
 	compressThreshold: number; // MB - 压缩阈值
 	targetSize: number; // MB - 期望大小
+	enableNetworkImageUpload: boolean;
+	excludedImageDomains: string[];
 	
 	// 用户体验配置
 	showUploadProgress: boolean;
@@ -41,12 +49,16 @@ export const DEFAULT_SETTINGS: CFImageBedSettings = {
 	// 基础配置
 	apiUrl: '',
 	authCode: '',
+	apiToken: '',
 	uploadChannel: 'telegram',
+	channelName: '',
 	uploadNameType: 'default',
+	customUploadNamePattern: '${noteFileName}-${datetime}-${originalAttachmentFileName}',
 	returnFormat: 'default',
 	uploadFolder: '',
-	serverCompress: true,
+	serverCompress: false,
 	autoRetry: true,
+	chunkSizeMB: 16,
 	
 	// 高级配置
 	maxFileSize: 10, // 10MB
@@ -61,6 +73,8 @@ export const DEFAULT_SETTINGS: CFImageBedSettings = {
 	enableClientCompress: false,
 	compressThreshold: 2, // 2MB
 	targetSize: 1, // 1MB
+	enableNetworkImageUpload: false,
+	excludedImageDomains: [],
 	
 	// 用户体验配置
 	showUploadProgress: true,

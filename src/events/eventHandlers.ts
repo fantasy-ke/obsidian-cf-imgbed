@@ -33,26 +33,15 @@ export class EventHandlers {
 	}
 
 	registerPasteEvents(plugin: Plugin): void {
-		// 添加粘贴上传功能 - 使用 DOM 事件监听
-		plugin.registerDomEvent(document, 'paste', (evt: ClipboardEvent) => {
-			const items = evt.clipboardData?.items;
-			if (items) {
-				for (let i = 0; i < items.length; i++) {
-					const item = items[i];
-					if (item.type.startsWith('image/')) {
-						const file = item.getAsFile();
-						if (file) {
-							// 阻止默认的粘贴行为，防止 Obsidian 创建本地文件
-							evt.preventDefault();
-							evt.stopPropagation();
-							// 上传图片
-							void this.imageHandler.uploadImageFromFile(file, true);
-							return;
-						}
-					}
+		plugin.registerEvent(
+			plugin.app.workspace.on('editor-paste', (evt: ClipboardEvent, editor: Editor) => {
+				if (evt.defaultPrevented) {
+					return;
 				}
-			}
-		}, true); // 使用捕获阶段，确保优先处理
+
+				void this.imageHandler.handleEditorPaste(evt, editor);
+			})
+		);
 	}
 
 	registerEditorMenuEvents(plugin: Plugin): void {
