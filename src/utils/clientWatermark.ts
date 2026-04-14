@@ -1,6 +1,31 @@
-import { Notice } from 'obsidian';
+import { Notice, getLanguage } from 'obsidian';
+import { I18n, resolveLanguage } from './i18n';
 
 export class ClientWatermark {
+	private static i18n = new I18n(resolveLanguage(getLanguage()));
+
+	private static isDevelopmentBuild(): boolean {
+		const runtime = globalThis as typeof globalThis & {
+			process?: {
+				env?: {
+					NODE_ENV?: string;
+				};
+			};
+		};
+
+		return runtime.process?.env?.NODE_ENV !== 'production';
+	}
+
+	private static debugLog(message: string): void {
+		if (this.isDevelopmentBuild()) {
+			console.debug(message);
+		}
+	}
+
+	private static syncLanguage(): void {
+		this.i18n.setLanguage(resolveLanguage(getLanguage()));
+	}
+
 	/**
 	 * 为图片添加水印
 	 * @param file 原始图片文件
@@ -17,12 +42,14 @@ export class ClientWatermark {
 		fontSize: number,
 		opacity: number
 	): Promise<File> {
+		this.syncLanguage();
+
 		if (!watermarkText.trim()) {
-			console.debug('CF ImageBed: Watermark text is empty, skipping watermark processing');
+			this.debugLog('CF ImageBed: Watermark text is empty, skipping watermark processing');
 			return file;
 		}
 
-		console.debug(`CF ImageBed: Starting watermark addition - text: ${watermarkText}, position: ${position}`);
+		this.debugLog(`CF ImageBed: Starting watermark addition - text: ${watermarkText}, position: ${position}`);
 
 		try {
 			// 创建图片对象
@@ -31,7 +58,7 @@ export class ClientWatermark {
 			const ctx = canvas.getContext('2d');
 
 			if (!ctx) {
-				throw new Error('无法创建画布上下文');
+				throw new Error(this.i18n.t('errors.canvasContextUnavailable'));
 			}
 
 			// 等待图片加载
@@ -75,7 +102,7 @@ export class ClientWatermark {
 					if (blob) {
 						resolve(blob);
 					} else {
-						throw new Error('水印添加失败');
+						throw new Error(this.i18n.t('errors.watermarkApplyFailed'));
 					}
 				}, file.type, 0.9);
 			});
@@ -86,7 +113,7 @@ export class ClientWatermark {
 				lastModified: Date.now()
 			});
 
-			console.debug('CF ImageBed: Watermark addition complete');
+			this.debugLog('CF ImageBed: Watermark addition complete');
 
 			// 清理资源
 			URL.revokeObjectURL(img.src);
@@ -94,8 +121,8 @@ export class ClientWatermark {
 			return watermarkedFile;
 
 		} catch (error) {
-			console.error('CF ImageBed: 水印添加失败:', error);
-			new Notice('水印添加失败，将上传原始文件', 3000);
+			console.error('CF ImageBed: Watermark processing failed:', error);
+			new Notice(this.i18n.t('notices.watermarkFailedFallback'), 3000);
 			return file;
 		}
 	}

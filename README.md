@@ -1,10 +1,14 @@
-# CF ImageBed - Obsidian 插件
+# CF ImageBed for Obsidian
 
 <div align="center">
 
 [English](README_EN.md) | [中文](README.md)
 
 </div>
+
+An image upload plugin for Obsidian that uploads images to CloudFlare ImgBed. It supports local image uploads, remote image fetch-and-upload, and batch replacement of image links in the current note.
+
+> Note: In Obsidian, the English link above opens in your browser.
 
 这是一个用于 Obsidian 的图片上传插件，可以将图片上传到 CloudFlare ImgBed 服务，支持本地图片上传、网络图片抓取上传，以及当前文档图片批量替换。
 

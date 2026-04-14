@@ -1,8 +1,9 @@
-import { App, Notice, normalizePath, requestUrl, TFile, TFolder } from 'obsidian';
+import { App, Notice, getLanguage, normalizePath, requestUrl, TFile, TFolder } from 'obsidian';
 import { CFImageBedSettings } from '../types';
 import { ClientCompressor } from '../utils/clientCompressor';
 import { ClientWatermark } from '../utils/clientWatermark';
 import { buildCustomUploadFile, resolveTemplatePath } from '../utils/templateResolver';
+import { I18n, resolveLanguage } from '../utils/i18n';
 
 interface UploadRuntimeConfig {
 	file: File;
@@ -12,18 +13,44 @@ interface UploadRuntimeConfig {
 }
 
 export class UploadService {
+	private i18n = new I18n(resolveLanguage(getLanguage()));
+
 	constructor(
 		private app: App,
 		private settings: CFImageBedSettings
 	) {}
 
+	private isDevelopmentBuild(): boolean {
+		const runtime = globalThis as typeof globalThis & {
+			process?: {
+				env?: {
+					NODE_ENV?: string;
+				};
+			};
+		};
+
+		return runtime.process?.env?.NODE_ENV !== 'production';
+	}
+
+	private debugLog(message: string): void {
+		if (this.isDevelopmentBuild()) {
+			console.debug(message);
+		}
+	}
+
+	private syncLanguage(): void {
+		this.i18n.setLanguage(this.settings.language || resolveLanguage(getLanguage()));
+	}
+
 	async uploadImage(
 		file: File,
 		options: { showErrorNotice?: boolean; noteFile?: TFile | null } = {}
 	): Promise<string | null> {
+		this.syncLanguage();
+
 		if (!this.settings.apiUrl || (!this.settings.authCode && !this.settings.apiToken)) {
 			if (options.showErrorNotice !== false) {
-				new Notice('请先配置 API URL，并填写认证码或 API Token');
+				new Notice(this.i18n.t('notices.uploadConfigRequired'));
 			}
 			return null;
 		}
@@ -34,7 +61,7 @@ export class UploadService {
 			// 检查文件类型
 			if (!this.isAllowedFileType(runtimeConfig.file)) {
 				if (options.showErrorNotice !== false) {
-					new Notice(`不支持的文件类型: ${runtimeConfig.file.type}`);
+					new Notice(this.i18n.t('notices.unsupportedFileType', { type: runtimeConfig.file.type }));
 				}
 				return null;
 			}
@@ -42,7 +69,9 @@ export class UploadService {
 			// 检查文件大小
 			if (!this.isFileSizeAllowed(runtimeConfig.file)) {
 				if (options.showErrorNotice !== false) {
-					new Notice(`文件大小超过限制: ${ClientCompressor.formatFileSize(runtimeConfig.file.size)}`);
+					new Notice(this.i18n.t('notices.fileSizeExceeded', {
+						size: ClientCompressor.formatFileSize(runtimeConfig.file.size)
+					}));
 				}
 				return null;
 			}
@@ -52,7 +81,7 @@ export class UploadService {
 			
 			// 1. 添加水印
 			if (this.settings.enableWatermark && ClientWatermark.isWatermarkable(runtimeConfig.file)) {
-				console.debug('CF ImageBed: Starting watermark addition');
+				this.debugLog('CF ImageBed: Starting watermark addition');
 				processedFile = await ClientWatermark.addWatermark(
 					processedFile,
 					this.settings.watermarkText,
@@ -64,7 +93,7 @@ export class UploadService {
 			
 			// 2. 客户端压缩
 			if (this.settings.enableClientCompress && ClientCompressor.isCompressible(processedFile)) {
-				console.debug('CF ImageBed: Starting client compression');
+				this.debugLog('CF ImageBed: Starting client compression');
 				processedFile = await ClientCompressor.compressImage(
 					processedFile, 
 					this.settings.targetSize, 
@@ -74,7 +103,7 @@ export class UploadService {
 				// 显示压缩结果
 				const originalSize = ClientCompressor.formatFileSize(runtimeConfig.file.size);
 				const processedSize = ClientCompressor.formatFileSize(processedFile.size);
-				console.debug(`CF ImageBed: Processing complete - Original: ${originalSize}, Processed: ${processedSize}`);
+				this.debugLog(`CF ImageBed: Processing complete - Original: ${originalSize}, Processed: ${processedSize}`);
 			}
 
 			const result = this.shouldUseChunkedUpload(processedFile)
@@ -88,7 +117,7 @@ export class UploadService {
 					try {
 						await this.saveLocalBackup(processedFile, runtimeConfig.backupPath);
 				} catch (e) {
-					console.warn('Local backup failed:', e);
+					console.warn('CF ImageBed: Local backup failed:', e);
 				}
 				}
 				// 根据返回格式设置决定是否拼接URL
@@ -101,13 +130,16 @@ export class UploadService {
 					return fullUrl;
 				}
 			} else {
-				throw new Error('服务器返回格式错误');
+				throw new Error(this.i18n.t('errors.serverResponseInvalid'));
 			}
 		} catch (error) {
-			console.error('Image upload failed:', error);
+			console.error('CF ImageBed: Image upload failed:', error);
 			if (options.showErrorNotice !== false && this.settings.showErrorNotification) {
 				const errorMessage = error instanceof Error ? error.message : String(error);
-				new Notice(`Image upload failed: ${errorMessage}`, (this.settings.notificationDuration ?? 5) * 1000);
+				new Notice(
+					this.i18n.t('notices.uploadFailed', { message: errorMessage }),
+					(this.settings.notificationDuration ?? 5) * 1000
+				);
 			}
 			return null;
 		}
@@ -181,7 +213,7 @@ export class UploadService {
 
 	private async chunkedUpload(file: File, runtimeConfig: UploadRuntimeConfig): Promise<unknown> {
 		if (this.settings.chunkSizeMB <= 0) {
-			throw new Error('分块大小必须大于 0 才能启用分块上传');
+			throw new Error(this.i18n.t('errors.chunkSizeMustBePositive'));
 		}
 
 		const chunkSizeBytes = this.settings.chunkSizeMB * 1024 * 1024;
@@ -199,7 +231,7 @@ export class UploadService {
 
 		const uploadId = this.extractUploadId(initResult);
 		if (!uploadId) {
-			throw new Error('初始化分块上传失败：未获取到 uploadId');
+			throw new Error(this.i18n.t('errors.chunkInitMissingUploadId'));
 		}
 
 		for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
@@ -246,7 +278,7 @@ export class UploadService {
 		});
 
 		if (response.status !== 200) {
-			throw new Error(`Upload failed: ${response.status}`);
+			throw new Error(this.i18n.t('errors.uploadHttpFailed', { status: response.status }));
 		}
 
 		return response.json;
@@ -388,7 +420,7 @@ export class UploadService {
 			}
 
 			if (!(existing instanceof TFolder)) {
-				throw new Error(`备份路径冲突：${currentPath} 已存在同名文件`);
+				throw new Error(this.i18n.t('errors.backupPathConflict', { path: currentPath }));
 			}
 		}
 	}

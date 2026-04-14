@@ -1,10 +1,10 @@
-import { MarkdownView, Plugin } from 'obsidian';
+import { MarkdownView, Plugin, getLanguage } from 'obsidian';
 import { CFImageBedSettings, DEFAULT_SETTINGS } from './src/types';
 import { UploadService } from './src/upload/uploadService';
 import { ImageHandler } from './src/upload/imageHandler';
 import { EventHandlers } from './src/events/eventHandlers';
 import { CFImageBedSettingTab } from './src/settings/settingsTab';
-import { I18n } from './src/utils/i18n';
+import { I18n, resolveLanguage } from './src/utils/i18n';
 import { parseDomainList } from './src/utils/domainUtils';
 
 export default class CFImageBedPlugin extends Plugin {
@@ -18,7 +18,7 @@ export default class CFImageBedPlugin extends Plugin {
 		await this.loadSettings();
 
 		// 初始化i18n
-		this.i18n = new I18n(this.settings.language || 'zh');
+		this.i18n = new I18n(this.settings.language || resolveLanguage(getLanguage()));
 
 		// 初始化服务
 		this.uploadService = new UploadService(this.app, this.settings);
@@ -63,18 +63,22 @@ export default class CFImageBedPlugin extends Plugin {
 
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const persistedSettings = await this.loadData() as Partial<CFImageBedSettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, persistedSettings);
+		if (!persistedSettings?.language) {
+			this.settings.language = resolveLanguage(getLanguage());
+		}
 		this.settings.excludedImageDomains = this.normalizeExcludedImageDomains(
 			this.settings.excludedImageDomains
 		);
-		this.i18n?.setLanguage(this.settings.language || 'zh');
+		this.i18n?.setLanguage(this.settings.language || resolveLanguage(getLanguage()));
 	}
 
 	async saveSettings() {
 		this.settings.excludedImageDomains = this.normalizeExcludedImageDomains(
 			this.settings.excludedImageDomains
 		);
-		this.i18n?.setLanguage(this.settings.language || 'zh');
+		this.i18n?.setLanguage(this.settings.language || resolveLanguage(getLanguage()));
 		await this.saveData(this.settings);
 	}
 

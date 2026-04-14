@@ -1,6 +1,6 @@
-import { App, DropdownComponent, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent } from 'obsidian';
+import { App, DropdownComponent, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent, getLanguage } from 'obsidian';
 import CFImageBedPlugin from '../../main';
-import { I18n } from '../utils/i18n';
+import { I18n, resolveLanguage } from '../utils/i18n';
 import { UploadChannel } from '../types';
 import { extractHostname, formatDomainList, parseDomainList } from '../utils/domainUtils';
 
@@ -8,10 +8,18 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 	plugin: CFImageBedPlugin;
 	private i18n: I18n;
 
+	private isLanguage(value: string): value is 'zh' | 'en' {
+		return value === 'zh' || value === 'en';
+	}
+
+	private isUploadChannel(value: string): value is UploadChannel {
+		return value === 'telegram' || value === 'cfr2' || value === 's3' || value === 'discord' || value === 'huggingface';
+	}
+
 	constructor(app: App, plugin: CFImageBedPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.i18n = new I18n(plugin.settings.language || 'zh');
+		this.i18n = new I18n(plugin.settings.language || resolveLanguage(getLanguage()));
 	}
 
 	display(): void {
@@ -20,7 +28,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		
 		// 更新语言
-		this.i18n.setLanguage(this.plugin.settings.language || 'zh');
+		this.i18n.setLanguage(this.plugin.settings.language || resolveLanguage(getLanguage()));
 		
 		// 添加插件专用的CSS类名，限制样式作用域
 		containerEl.addClass('cf-imagebed-settings');
@@ -34,11 +42,12 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.addDropdown((dropdown: DropdownComponent) => dropdown
 				.addOption('zh', '中文')
 				.addOption('en', 'English')
-				.setValue(this.plugin.settings.language || 'zh')
-				.onChange(async (value: 'zh' | 'en') => {
-					this.plugin.settings.language = value;
+				.setValue(this.plugin.settings.language || resolveLanguage(getLanguage()))
+				.onChange(async (value: string) => {
+					const nextLanguage = this.isLanguage(value) ? value : resolveLanguage(getLanguage());
+					this.plugin.settings.language = nextLanguage;
 					await this.plugin.saveSettings();
-					this.i18n.setLanguage(value);
+					this.i18n.setLanguage(nextLanguage);
 					// 重新渲染设置界面
 					this.display();
 				}));
@@ -143,7 +152,11 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.addOption('discord', this.i18n.t('settings.basic.uploadChannel.options.discord'))
 				.addOption('huggingface', this.i18n.t('settings.basic.uploadChannel.options.huggingface'))
 				.setValue(this.plugin.settings.uploadChannel)
-				.onChange(async (value: UploadChannel) => {
+				.onChange(async (value: string) => {
+					if (!this.isUploadChannel(value)) {
+						return;
+					}
+
 					this.plugin.settings.uploadChannel = value;
 					this.plugin.settings.chunkSizeMB = this.getDefaultChunkSize(value);
 					if (value !== 'telegram') {

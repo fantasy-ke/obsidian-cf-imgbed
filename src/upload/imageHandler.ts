@@ -82,7 +82,7 @@ export class ImageHandler {
 		evt.stopPropagation();
 
 		if (settings.showUploadProgress) {
-			new Notice('正在上传网络图片...');
+			new Notice(this.i18n?.t('notices.uploadingRemoteImages') || 'Uploading remote images...');
 		}
 
 		const handled = await this.handleRemoteClipboardContent(
@@ -102,7 +102,7 @@ export class ImageHandler {
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		const activeFile = this.app.workspace.getActiveFile();
 		if (!activeView || !activeFile) {
-			new Notice('请先打开一个 Markdown 文件');
+			new Notice(this.i18n?.t('notices.openMarkdownFileFirst') || 'Please open a Markdown file first');
 			return;
 		}
 
@@ -124,21 +124,24 @@ export class ImageHandler {
 
 		if (uploadableReferences.length === 0) {
 			if (excludedRemoteCount > 0) {
-				new Notice('当前文档中的网络图片都在排除域名列表中，已跳过');
+				new Notice(this.i18n?.t('notices.allRemoteImagesExcluded') || 'All remote images in this note are excluded and were skipped');
 				return;
 			}
 
 			if (allReferences.some((reference) => reference.isRemote)) {
-				new Notice('当前文档只有网络图片。开启“网络图片上传”后可一并上传。');
+				new Notice(this.i18n?.t('notices.onlyRemoteImagesFound') || 'This note only contains remote images. Enable remote image upload to upload them.');
 				return;
 			}
 
-			new Notice('当前文档没有可上传的图片');
+			new Notice(this.i18n?.t('notices.noUploadableImages') || 'No uploadable images found in the current note');
 			return;
 		}
 
 		if (settings?.showUploadProgress) {
-			new Notice(`正在上传当前文档中的 ${uploadableReferences.length} 张图片...`);
+			new Notice(
+				this.i18n?.t('notices.uploadingCurrentNoteImages', { count: uploadableReferences.length })
+				|| `Uploading ${uploadableReferences.length} images from the current note...`
+			);
 		}
 
 		const replacements: TextReplacement[] = [];
@@ -165,7 +168,7 @@ export class ImageHandler {
 		}
 
 		if (editor.getValue() !== originalContent) {
-			new Notice('文档内容已变化，本次未自动替换链接');
+			new Notice(this.i18n?.t('notices.documentChangedSkipReplace') || 'The note content changed, so links were not replaced automatically');
 			return;
 		}
 
@@ -203,7 +206,7 @@ export class ImageHandler {
 			input.click();
 		} catch (error) {
 			console.warn('文件选择器打开失败，可能是移动端权限问题:', error);
-			new Notice('请检查浏览器权限设置，允许访问文件系统');
+			new Notice(this.i18n?.t('notices.checkFileSystemPermission') || 'Please check browser permissions and allow file system access');
 		}
 	}
 
@@ -302,14 +305,14 @@ export class ImageHandler {
 	private async uploadImageToEditor(file: File, editor?: Editor): Promise<void> {
 		const targetEditor = editor ?? this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
 		if (!targetEditor) {
-			new Notice('请先打开一个 Markdown 文件');
+			new Notice(this.i18n?.t('notices.openMarkdownFileFirst') || 'Please open a Markdown file first');
 			return;
 		}
 		const noteFile = this.app.workspace.getActiveFile();
 
 		const settings = this.getSettings?.();
 		if (settings?.showUploadProgress) {
-			new Notice('正在上传图片...');
+			new Notice(this.i18n?.t('notices.uploadingImage') || 'Uploading image...');
 		}
 
 		const imageUrl = await this.uploadService.uploadImage(file, { noteFile });
@@ -319,7 +322,10 @@ export class ImageHandler {
 
 		targetEditor.replaceSelection(this.buildMarkdownImage(file.name, imageUrl, file.name));
 		if (settings?.showSuccessNotification) {
-			new Notice(`图片上传成功：${imageUrl}`, (settings.notificationDuration ?? 5) * 1000);
+			new Notice(
+				this.i18n?.t('notices.uploadSuccess', { url: imageUrl }) || `Image uploaded successfully: ${imageUrl}`,
+				(settings.notificationDuration ?? 5) * 1000
+			);
 		}
 	}
 
@@ -604,32 +610,42 @@ export class ImageHandler {
 		const settings = this.getSettings?.();
 		if (successCount > 0 && settings?.showSuccessNotification) {
 			new Notice(
-				`网络图片上传完成：成功 ${successCount}，失败 ${failedCount}`,
+				this.i18n?.t('notices.remoteUploadSummary', { success: successCount, failed: failedCount })
+					|| `Remote image upload completed: ${successCount} succeeded, ${failedCount} failed`,
 				(settings.notificationDuration ?? 5) * 1000
 			);
 			return;
 		}
 
 		if (successCount === 0 && failedCount > 0 && settings?.showErrorNotification) {
-			new Notice('网络图片上传失败，已保留原始内容', (settings.notificationDuration ?? 5) * 1000);
+			new Notice(
+				this.i18n?.t('notices.remoteUploadFailedKeepOriginal') || 'Remote image upload failed and original content was kept',
+				(settings.notificationDuration ?? 5) * 1000
+			);
 		}
 	}
 
 	private showBatchUploadSummary(successCount: number, failedCount: number, skippedCount: number): void {
 		const settings = this.getSettings?.();
 		if (successCount > 0 && settings?.showSuccessNotification) {
-			const skippedText = skippedCount > 0 ? `，跳过 ${skippedCount}` : '';
+			const skippedText = skippedCount > 0
+				? (this.i18n?.t('notices.skippedText', { count: skippedCount }) || `, ${skippedCount} skipped`)
+				: '';
 			new Notice(
-				`当前文档图片上传完成：成功 ${successCount}，失败 ${failedCount}${skippedText}`,
+				this.i18n?.t('notices.batchUploadSummary', { success: successCount, failed: failedCount, skippedText })
+					|| `Current note upload completed: ${successCount} succeeded, ${failedCount} failed${skippedText}`,
 				(settings.notificationDuration ?? 5) * 1000
 			);
 			return;
 		}
 
 		if (successCount === 0 && settings?.showErrorNotification) {
-			const skippedText = skippedCount > 0 ? `，跳过 ${skippedCount}` : '';
+			const skippedText = skippedCount > 0
+				? (this.i18n?.t('notices.skippedText', { count: skippedCount }) || `, ${skippedCount} skipped`)
+				: '';
 			new Notice(
-				`当前文档图片上传失败：成功 0，失败 ${failedCount}${skippedText}`,
+				this.i18n?.t('notices.batchUploadFailed', { failed: failedCount, skippedText })
+					|| `Current note upload failed: 0 succeeded, ${failedCount} failed${skippedText}`,
 				(settings.notificationDuration ?? 5) * 1000
 			);
 		}

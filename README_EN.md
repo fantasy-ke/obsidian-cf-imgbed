@@ -1,10 +1,12 @@
-# CF ImageBed - Obsidian Plugin
+# CF ImageBed for Obsidian
 
 <div align="center">
 
 [English](README_EN.md) | [中文](README.md)
 
 </div>
+
+> Note: In Obsidian, this language switch link opens in your browser.
 
 An Obsidian plugin for uploading images to CloudFlare ImgBed with local image upload, remote image fetching, and batch replacement for images in the current note.
 

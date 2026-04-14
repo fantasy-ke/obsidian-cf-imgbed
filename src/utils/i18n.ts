@@ -1,5 +1,9 @@
 export type Language = 'zh' | 'en';
 
+export function resolveLanguage(language: string | null | undefined): Language {
+	return language?.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+}
+
 export interface Translations {
 	[key: string]: string | Translations;
 }
@@ -197,6 +201,57 @@ const translations: Record<Language, Translations> = {
 			takePhoto: '📷 拍照',
 			selectFromGallery: '🖼️ 从相册选择',
 			cancel: '取消'
+		},
+		notices: {
+			uploadingRemoteImages: '正在上传网络图片...',
+			openMarkdownFileFirst: '请先打开一个 Markdown 文件',
+			allRemoteImagesExcluded: '当前文档中的网络图片都在排除域名列表中，已跳过',
+			onlyRemoteImagesFound: '当前文档只有网络图片。开启“网络图片上传”后可一并上传。',
+			noUploadableImages: '当前文档没有可上传的图片',
+			uploadingCurrentNoteImages: '正在上传当前文档中的 {count} 张图片...',
+			documentChangedSkipReplace: '文档内容已变化，本次未自动替换链接',
+			checkFileSystemPermission: '请检查浏览器权限设置，允许访问文件系统',
+			uploadingImage: '正在上传图片...',
+			uploadSuccess: '图片上传成功：{url}',
+			remoteUploadSummary: '网络图片上传完成：成功 {success}，失败 {failed}',
+			remoteUploadFailedKeepOriginal: '网络图片上传失败，已保留原始内容',
+			batchUploadSummary: '当前文档图片上传完成：成功 {success}，失败 {failed}{skippedText}',
+			batchUploadFailed: '当前文档图片上传失败：成功 0，失败 {failed}{skippedText}',
+			skippedText: '，跳过 {count}',
+			uploadConfigRequired: '请先配置 API URL，并填写认证码或 API Token',
+			unsupportedFileType: '不支持的文件类型: {type}',
+			fileSizeExceeded: '文件大小超过限制: {size}',
+			uploadFailed: '图片上传失败：{message}',
+			watermarkFailedFallback: '水印添加失败，将上传原始文件'
+		},
+		errors: {
+			serverResponseInvalid: '服务器返回格式错误',
+			chunkSizeMustBePositive: '分块大小必须大于 0 才能启用分块上传',
+			chunkInitMissingUploadId: '初始化分块上传失败：未获取到 uploadId',
+			uploadHttpFailed: '上传失败，状态码：{status}',
+			backupPathConflict: '备份路径冲突：{path} 已存在同名文件',
+			canvasContextUnavailable: '无法创建画布上下文',
+			watermarkApplyFailed: '水印添加失败'
+		},
+		validation: {
+			apiUrlRequired: 'API URL 不能为空',
+			apiUrlInvalid: 'API URL 格式不正确',
+			authRequired: '认证码和 API Token 至少填写一项',
+			chunkSizeOutOfRange: '分块大小应在 0-100 MB 之间',
+			maxFileSizeOutOfRange: '文件大小限制应在 1-100 MB 之间',
+			compressThresholdOutOfRange: '压缩阈值应在 0.1-20 MB 之间',
+			targetSizeOutOfRange: '期望大小应在 0.1-10 MB 之间',
+			targetSizeMustBeSmaller: '期望大小应小于压缩阈值',
+			notificationDurationOutOfRange: '通知持续时间应在 1-30 秒之间',
+			allowedFileTypesRequired: '至少需要指定一种允许的文件类型',
+			channelNameInvalid: '渠道名称格式不正确',
+			customPatternRequired: '自定义命名时必须设置文件名模板',
+			watermarkTextRequired: '启用水印时必须设置水印文字',
+			watermarkSizeOutOfRange: '水印字体大小应在 8-100 像素之间',
+			watermarkOpacityOutOfRange: '水印透明度应在 0.1-1 之间',
+			backupPathRequired: '启用本地备份时必须设置备份路径',
+			validateFailed: '配置验证失败：\n{errors}',
+			validateSuccess: '配置验证通过'
 		}
 	},
 	en: {
@@ -391,6 +446,57 @@ const translations: Record<Language, Translations> = {
 			takePhoto: '📷 Take photo',
 			selectFromGallery: '🖼️ Select from gallery',
 			cancel: 'Cancel'
+		},
+		notices: {
+			uploadingRemoteImages: 'Uploading remote images...',
+			openMarkdownFileFirst: 'Please open a Markdown file first',
+			allRemoteImagesExcluded: 'All remote images in this note are excluded and were skipped',
+			onlyRemoteImagesFound: 'This note only contains remote images. Enable remote image upload to upload them.',
+			noUploadableImages: 'No uploadable images found in the current note',
+			uploadingCurrentNoteImages: 'Uploading {count} images from the current note...',
+			documentChangedSkipReplace: 'The note content changed, so links were not replaced automatically',
+			checkFileSystemPermission: 'Please check browser permissions and allow file system access',
+			uploadingImage: 'Uploading image...',
+			uploadSuccess: 'Image uploaded successfully: {url}',
+			remoteUploadSummary: 'Remote image upload completed: {success} succeeded, {failed} failed',
+			remoteUploadFailedKeepOriginal: 'Remote image upload failed and original content was kept',
+			batchUploadSummary: 'Current note upload completed: {success} succeeded, {failed} failed{skippedText}',
+			batchUploadFailed: 'Current note upload failed: 0 succeeded, {failed} failed{skippedText}',
+			skippedText: ', {count} skipped',
+			uploadConfigRequired: 'Please configure API URL and provide auth code or API token',
+			unsupportedFileType: 'Unsupported file type: {type}',
+			fileSizeExceeded: 'File size exceeds limit: {size}',
+			uploadFailed: 'Image upload failed: {message}',
+			watermarkFailedFallback: 'Watermark processing failed. Uploading the original file instead'
+		},
+		errors: {
+			serverResponseInvalid: 'Invalid server response format',
+			chunkSizeMustBePositive: 'Chunk size must be greater than 0 to enable chunked upload',
+			chunkInitMissingUploadId: 'Chunked upload initialization failed: uploadId is missing',
+			uploadHttpFailed: 'Upload failed with status code: {status}',
+			backupPathConflict: 'Backup path conflict: {path} already exists as a file',
+			canvasContextUnavailable: 'Failed to create canvas context',
+			watermarkApplyFailed: 'Failed to apply watermark'
+		},
+		validation: {
+			apiUrlRequired: 'API URL is required',
+			apiUrlInvalid: 'API URL format is invalid',
+			authRequired: 'Either auth code or API token is required',
+			chunkSizeOutOfRange: 'Chunk size must be between 0 and 100 MB',
+			maxFileSizeOutOfRange: 'Maximum file size must be between 1 and 100 MB',
+			compressThresholdOutOfRange: 'Compression threshold must be between 0.1 and 20 MB',
+			targetSizeOutOfRange: 'Target size must be between 0.1 and 10 MB',
+			targetSizeMustBeSmaller: 'Target size must be smaller than compression threshold',
+			notificationDurationOutOfRange: 'Notification duration must be between 1 and 30 seconds',
+			allowedFileTypesRequired: 'At least one allowed file type is required',
+			channelNameInvalid: 'Channel name format is invalid',
+			customPatternRequired: 'Custom naming requires a file name template',
+			watermarkTextRequired: 'Watermark text is required when watermark is enabled',
+			watermarkSizeOutOfRange: 'Watermark font size must be between 8 and 100 pixels',
+			watermarkOpacityOutOfRange: 'Watermark opacity must be between 0.1 and 1',
+			backupPathRequired: 'Backup path is required when local backup is enabled',
+			validateFailed: 'Settings validation failed:\n{errors}',
+			validateSuccess: 'Settings validated successfully'
 		}
 	}
 };
@@ -410,7 +516,18 @@ export class I18n {
 		return this.currentLanguage;
 	}
 
-	t(key: string): string {
+	private format(template: string, params?: Record<string, string | number>): string {
+		if (!params) {
+			return template;
+		}
+
+		return template.replace(/\{(\w+)\}/g, (match, key: string) => {
+			const value = params[key];
+			return value === undefined ? match : String(value);
+		});
+	}
+
+	t(key: string, params?: Record<string, string | number>): string {
 		const keys = key.split('.');
 		let value: Translations | string = translations[this.currentLanguage];
 
@@ -431,7 +548,7 @@ export class I18n {
 			}
 		}
 
-		return typeof value === 'string' ? value : key;
+		return typeof value === 'string' ? this.format(value, params) : key;
 	}
 }
 

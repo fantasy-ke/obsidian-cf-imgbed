@@ -1,6 +1,24 @@
 import { Notice } from 'obsidian';
 
 export class ClientCompressor {
+	private static isDevelopmentBuild(): boolean {
+		const runtime = globalThis as typeof globalThis & {
+			process?: {
+				env?: {
+					NODE_ENV?: string;
+				};
+			};
+		};
+
+		return runtime.process?.env?.NODE_ENV !== 'production';
+	}
+
+	private static debugLog(message: string): void {
+		if (this.isDevelopmentBuild()) {
+			console.debug(message);
+		}
+	}
+
 	/**
 	 * 压缩图片文件
 	 * @param file 原始图片文件
@@ -17,11 +35,11 @@ export class ClientCompressor {
 		const fileSizeMB = file.size / (1024 * 1024);
 		
 		if (fileSizeMB <= thresholdMB) {
-			console.debug(`CF ImageBed: File size ${fileSizeMB.toFixed(2)}MB does not exceed threshold ${thresholdMB}MB, skipping compression`);
+			this.debugLog(`CF ImageBed: File size ${fileSizeMB.toFixed(2)}MB does not exceed threshold ${thresholdMB}MB, skipping compression`);
 			return file;
 		}
 
-		console.debug(`CF ImageBed: Starting image compression, original size: ${fileSizeMB.toFixed(2)}MB, target size: ${targetSizeMB}MB`);
+		this.debugLog(`CF ImageBed: Starting image compression, original size: ${fileSizeMB.toFixed(2)}MB, target size: ${targetSizeMB}MB`);
 
 		try {
 			// 创建图片对象
@@ -73,7 +91,7 @@ export class ClientCompressor {
 			});
 
 			const compressedSizeMB = compressedFile.size / (1024 * 1024);
-			console.debug(`CF ImageBed: Compression complete, compressed size: ${compressedSizeMB.toFixed(2)}MB`);
+			this.debugLog(`CF ImageBed: Compression complete, compressed size: ${compressedSizeMB.toFixed(2)}MB`);
 
 			// 清理资源
 			URL.revokeObjectURL(img.src);
