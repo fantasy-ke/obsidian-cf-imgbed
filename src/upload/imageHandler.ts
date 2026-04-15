@@ -461,7 +461,7 @@ export class ImageHandler {
 			});
 		}
 
-		const absoluteFile = await this.createFileFromAbsolutePath(reference.path);
+		const absoluteFile = this.createFileFromAbsolutePath(reference.path);
 		if (absoluteFile) {
 			return this.uploadService.uploadImage(absoluteFile, {
 				showErrorNotice: false,
@@ -553,7 +553,7 @@ export class ImageHandler {
 		return /^[a-zA-Z]:\//.test(path) || path.startsWith('//');
 	}
 
-	private async createFileFromAbsolutePath(linkPath: string): Promise<File | null> {
+	private createFileFromAbsolutePath(linkPath: string): File | null {
 		if (Platform.isMobile) {
 			return null;
 		}
