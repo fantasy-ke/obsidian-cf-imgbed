@@ -202,7 +202,21 @@ For detailed API documentation, please refer to CloudFlare ImgBed official [docu
 ## Version History
 
 <details>
-<summary><strong>v1.0.7 (Latest)</strong></summary>
+<summary><strong>v1.0.8 (Latest)</strong></summary>
+
+### Fixes
+- fix: Fixed Markdown-format image uploads that could fail unexpectedly
+- fix: Preserve Markdown / Wiki image size configuration after upload replacement
+
+#### Detailed Changes
+- Fixed size tokens being removed after upload for `![alt|108](path)`, `![alt|800x200](path)`, and `![alt|50%](path)`
+- Fixed replacement behavior for wiki links such as `![[image.png|300]]` and `![[image.png|caption|400x300]]` so parameters are retained
+- Added desktop fallback to read and upload Windows absolute-path images (for example `C:\Users\...\image.jpg`)
+
+</details>
+
+<details>
+<summary><strong>v1.0.7</strong></summary>
 
 ### Features & Improvements
 - feat: Improve Obsidian review compliance and multilingual UX

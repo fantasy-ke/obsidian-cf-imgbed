@@ -203,7 +203,21 @@ An image upload plugin for Obsidian that uploads images to CloudFlare ImgBed. It
 ## 版本更新历史
 
 <details>
-<summary><strong>v1.0.7 (最新版本)</strong></summary>
+<summary><strong>v1.0.8 (最新版本)</strong></summary>
+
+### 修复
+- fix: 修复 Markdown 格式图片上传不成功的问题
+- fix: 上传后替换链接时保留 Markdown / Wiki 图片尺寸配置，不再丢失宽高参数
+
+#### 详细变更
+- 修复 `![alt|108](path)`、`![alt|800x200](path)`、`![alt|50%](path)` 在上传后尺寸参数被移除的问题
+- 修复 `![[image.png|300]]`、`![[image.png|说明|400x300]]` 在上传后丢失参数的问题
+- 新增对 Windows 绝对路径图片（例如 `C:\Users\...\image.jpg`）的本地读取上传兜底（桌面端）
+
+</details>
+
+<details>
+<summary><strong>v1.0.7</strong></summary>
 
 ### 新功能与优化
 - feat: 完善 Obsidian 社区审核相关适配与多语言体验
