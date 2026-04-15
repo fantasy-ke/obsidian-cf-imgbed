@@ -162,7 +162,7 @@ export class ImageHandler {
 			replacements.push({
 				index: reference.index,
 				length: reference.length,
-				replacement: this.buildMarkdownImage(reference.altText, uploadedUrl, this.getFallbackImageName(reference.path))
+				replacement: this.buildReplacementForReference(reference, uploadedUrl)
 			});
 			successCount++;
 		}
@@ -418,7 +418,7 @@ export class ImageHandler {
 			replacements.push({
 				index: reference.index,
 				length: reference.length,
-				replacement: this.buildMarkdownImage(reference.altText, uploadedUrl, this.getFallbackImageName(reference.path))
+				replacement: this.buildReplacementForReference(reference, uploadedUrl)
 			});
 			successCount++;
 		}
@@ -453,28 +453,183 @@ export class ImageHandler {
 		noteFile?: TFile | null
 	): Promise<string | null> {
 		const localFile = this.resolveLocalFile(reference.path, sourcePath);
-		if (!localFile) {
-			return null;
+		if (localFile) {
+			const uploadFile = await this.createFileFromTFile(localFile);
+			return this.uploadService.uploadImage(uploadFile, {
+				showErrorNotice: false,
+				noteFile
+			});
 		}
 
-		const uploadFile = await this.createFileFromTFile(localFile);
-		return this.uploadService.uploadImage(uploadFile, {
-			showErrorNotice: false,
-			noteFile
-		});
+		const absoluteFile = await this.createFileFromAbsolutePath(reference.path);
+		if (absoluteFile) {
+			return this.uploadService.uploadImage(absoluteFile, {
+				showErrorNotice: false,
+				noteFile
+			});
+		}
+
+		console.warn(`CF ImageBed: 无法找到本地图片文件，路径: "${reference.path}"，来源文档: "${sourcePath}"`);
+		return null;
 	}
 
 	private resolveLocalFile(linkPath: string, sourcePath: string): TFile | null {
-		const normalizedPath = decodeURIComponent(linkPath.trim())
-			.replace(/^<|>$/g, '')
-			.replace(/^\/+/, '');
-		const resolvedByLink = this.app.metadataCache.getFirstLinkpathDest(normalizedPath, sourcePath);
+		const decoded = decodeURIComponent(linkPath.trim()).replace(/^<|>$/g, '');
+		const normalizedDecoded = this.normalizeLinkPath(decoded);
+		const mappedVaultPath = this.toVaultRelativePath(normalizedDecoded);
+		const basePath = (mappedVaultPath ?? normalizedDecoded).replace(/^\/+/, '');
+
+		// 方法1：去掉前导 / 后，通过 Obsidian 链接路径解析（适用于 wiki 链接风格路径）
+		const resolvedByLink = this.app.metadataCache.getFirstLinkpathDest(basePath, sourcePath);
 		if (resolvedByLink instanceof TFile) {
 			return resolvedByLink;
 		}
 
-		const resolvedByPath = this.app.vault.getAbstractFileByPath(normalizedPath);
-		return resolvedByPath instanceof TFile ? resolvedByPath : null;
+		// 方法2：作为精确保险库路径（适用于绝对路径格式）
+		const resolvedByPath = this.app.vault.getAbstractFileByPath(basePath);
+		if (resolvedByPath instanceof TFile) {
+			return resolvedByPath;
+		}
+
+		// 方法3：解析相对于源文档的路径（Obsidian「相对路径」链接格式生成 ./image.png 或 ../folder/image.png）
+		const resolvedRelative = this.resolveRelativeMarkdownPath(basePath, sourcePath);
+		if (resolvedRelative !== null && resolvedRelative !== basePath) {
+			const resolvedByRelativeLink = this.app.metadataCache.getFirstLinkpathDest(resolvedRelative, sourcePath);
+			if (resolvedByRelativeLink instanceof TFile) {
+				return resolvedByRelativeLink;
+			}
+			const resolvedByRelativePath = this.app.vault.getAbstractFileByPath(resolvedRelative);
+			if (resolvedByRelativePath instanceof TFile) {
+				return resolvedByRelativePath;
+			}
+		}
+
+		return null;
+	}
+
+	private normalizeLinkPath(path: string): string {
+		const slashNormalized = path.replace(/\\/g, '/');
+
+		if (!/^file:\/\//i.test(slashNormalized)) {
+			return slashNormalized;
+		}
+
+		try {
+			const fileUrl = new URL(slashNormalized);
+			if (fileUrl.protocol !== 'file:') {
+				return slashNormalized;
+			}
+
+			const pathname = decodeURIComponent(fileUrl.pathname);
+			// 处理 file:///C:/path/to/file.png => C:/path/to/file.png
+			return pathname.replace(/^\/([a-zA-Z]:\/)/, '$1');
+		} catch {
+			return slashNormalized;
+		}
+	}
+
+	private toVaultRelativePath(path: string): string | null {
+		if (!this.isAbsoluteFileSystemPath(path)) {
+			return path;
+		}
+
+		const vaultBasePath = this.getVaultBasePath();
+		if (!vaultBasePath) {
+			return null;
+		}
+
+		const normalizedVaultBase = vaultBasePath.replace(/\\/g, '/').replace(/\/+$/, '');
+		const pathLower = path.toLowerCase();
+		const baseLower = normalizedVaultBase.toLowerCase();
+
+		if (pathLower === baseLower || !pathLower.startsWith(`${baseLower}/`)) {
+			return null;
+		}
+
+		return path.slice(normalizedVaultBase.length + 1);
+	}
+
+	private isAbsoluteFileSystemPath(path: string): boolean {
+		return /^[a-zA-Z]:\//.test(path) || path.startsWith('//');
+	}
+
+	private async createFileFromAbsolutePath(linkPath: string): Promise<File | null> {
+		if (Platform.isMobile) {
+			return null;
+		}
+
+		const decoded = decodeURIComponent(linkPath.trim()).replace(/^<|>$/g, '');
+		const normalizedPath = this.normalizeLinkPath(decoded);
+		if (!this.isAbsoluteFileSystemPath(normalizedPath)) {
+			return null;
+		}
+
+		try {
+			const runtime = globalThis as typeof globalThis & {
+				require?: (moduleName: string) => {
+					readFileSync?: (path: string) => ArrayBuffer | Uint8Array;
+				};
+			};
+			const fs = runtime.require?.('fs');
+			if (!fs?.readFileSync) {
+				return null;
+			}
+
+			const fileBuffer = fs.readFileSync(normalizedPath);
+			const fileName = normalizedPath.split('/').pop() || 'image';
+			const extension = fileName.split('.').pop() || '';
+
+			return new File([fileBuffer], fileName, {
+				type: this.getMimeTypeFromExtension(extension)
+			});
+		} catch (error) {
+			console.warn(`CF ImageBed: 读取绝对路径图片失败，路径: "${normalizedPath}"`, error);
+			return null;
+		}
+	}
+
+	private getVaultBasePath(): string | null {
+		const adapter = this.app.vault.adapter as { getBasePath?: () => string };
+		if (typeof adapter.getBasePath === 'function') {
+			return adapter.getBasePath();
+		}
+
+		return null;
+	}
+
+	/**
+	 * 将 Markdown URL 相对路径（如 ./image.png、../folder/image.png）
+	 * 解析为相对于源文档所在目录的保险库路径
+	 */
+	private resolveRelativeMarkdownPath(decodedPath: string, sourcePath: string): string | null {
+		const normalizedPath = decodedPath.replace(/\\/g, '/');
+		if (this.isAbsoluteFileSystemPath(normalizedPath)) {
+			return null;
+		}
+
+		// 仅处理以 ./ 或 ../ 开头，或包含 / 的路径（相对路径标志）
+		const isRelative = normalizedPath.startsWith('./') || normalizedPath.startsWith('../');
+		const hasDirectory = normalizedPath.includes('/');
+		if (!isRelative && !hasDirectory) {
+			return null;
+		}
+
+		// 取源文档所在目录的各段
+		const sourceDir = sourcePath.includes('/')
+			? sourcePath.substring(0, sourcePath.lastIndexOf('/'))
+			: '';
+		const baseParts = sourceDir ? sourceDir.split('/') : [];
+
+		// 逐段处理相对路径
+		for (const part of normalizedPath.split('/')) {
+			if (part === '..') {
+				baseParts.pop();
+			} else if (part !== '.') {
+				baseParts.push(part);
+			}
+		}
+
+		return baseParts.join('/');
 	}
 
 	private async createFileFromTFile(file: TFile): Promise<File> {
@@ -519,6 +674,39 @@ export class ImageHandler {
 	private buildMarkdownImage(altText: string, imageUrl: string, fallbackName: string): string {
 		const normalizedAltText = this.escapeMarkdownText(altText.trim() || fallbackName);
 		return `![${normalizedAltText}](${imageUrl})`;
+	}
+
+	private buildReplacementForReference(reference: ParsedImageReference, uploadedUrl: string): string {
+		if (reference.syntax === 'wiki') {
+			const wikiMatch = reference.source.match(/^!\[\[(.*)\]\]$/);
+			if (wikiMatch) {
+				const segments = wikiMatch[1].split('|');
+				if (segments.length > 0) {
+					segments[0] = uploadedUrl;
+					return `![[${segments.join('|')}]]`;
+				}
+			}
+		}
+
+		if (reference.syntax === 'markdown') {
+			const angleStyleMatch = reference.source.match(
+				/^!\[(.*?)\]\(<([^>]+)>(\s+(?:"[^"]*"|'[^']*'))?\)$/
+			);
+			if (angleStyleMatch) {
+				const titlePart = angleStyleMatch[3] ?? '';
+				return `![${angleStyleMatch[1]}](<${uploadedUrl}>${titlePart})`;
+			}
+
+			const standardStyleMatch = reference.source.match(
+				/^!\[(.*?)\]\(([^)\s]+)(\s+(?:"[^"]*"|'[^']*'))?\)$/
+			);
+			if (standardStyleMatch) {
+				const titlePart = standardStyleMatch[3] ?? '';
+				return `![${standardStyleMatch[1]}](${uploadedUrl}${titlePart})`;
+			}
+		}
+
+		return this.buildMarkdownImage(reference.altText, uploadedUrl, this.getFallbackImageName(reference.path));
 	}
 
 	private escapeMarkdownText(value: string): string {

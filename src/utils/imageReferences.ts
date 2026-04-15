@@ -14,8 +14,8 @@ export interface ClipboardHtmlImage {
 }
 
 const MARKDOWN_IMAGE_REGEX =
-	/!\[(.*?)\]\(<([^>]+)>\)|!\[(.*?)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
-const WIKI_IMAGE_REGEX = /!\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/g;
+	/!\[(.*?)\]\(<([^>]+)>(?:\s+(?:"[^"]*"|'[^']*'))?\)|!\[(.*?)\]\(([^)\s]+)(?:\s+(?:"[^"]*"|'[^']*'))?\)/g;
+const WIKI_IMAGE_REGEX = /!\[\[([^\]]+)\]\]/g;
 const IMAGE_URL_REGEX = /https?:\/\/[^\s<>"']+/g;
 const IMAGE_EXTENSION_REGEX =
 	/\.(apng|avif|bmp|gif|heic|heif|ico|jpe?g|png|svg|webp)(?:$|[?#])/i;
@@ -30,11 +30,12 @@ export function extractMarkdownAndWikiImageReferences(
 		if (!path) {
 			continue;
 		}
+		const rawAltText = (match[1] ?? match[3] ?? '').trim();
 
 		references.push({
 			source: match[0],
 			path,
-			altText: (match[1] ?? match[3] ?? '').trim(),
+			altText: normalizeMarkdownAltText(rawAltText),
 			index: match.index ?? 0,
 			length: match[0].length,
 			syntax: 'markdown',
@@ -43,7 +44,8 @@ export function extractMarkdownAndWikiImageReferences(
 	}
 
 	for (const match of content.matchAll(WIKI_IMAGE_REGEX)) {
-		const path = (match[1] ?? '').trim();
+		const wikiParts = parseWikiImageTarget((match[1] ?? '').trim());
+		const path = wikiParts.path;
 		if (!path) {
 			continue;
 		}
@@ -51,7 +53,7 @@ export function extractMarkdownAndWikiImageReferences(
 		references.push({
 			source: match[0],
 			path,
-			altText: (match[2] ?? '').trim(),
+			altText: wikiParts.altText,
 			index: match.index ?? 0,
 			length: match[0].length,
 			syntax: 'wiki',
@@ -138,4 +140,43 @@ export function looksLikeImageUrl(url: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+function parseWikiImageTarget(target: string): { path: string; altText: string } {
+	const segments = target.split('|').map((segment) => segment.trim());
+	const path = segments[0] ?? '';
+
+	if (segments.length <= 1) {
+		return { path, altText: '' };
+	}
+
+	if (segments.length >= 3) {
+		return { path, altText: segments[1] ?? '' };
+	}
+
+	const second = segments[1] ?? '';
+	if (isImageSizeToken(second)) {
+		return { path, altText: '' };
+	}
+
+	return { path, altText: second };
+}
+
+function normalizeMarkdownAltText(altText: string): string {
+	const separatorIndex = altText.lastIndexOf('|');
+	if (separatorIndex <= 0) {
+		return altText;
+	}
+
+	const maybeSize = altText.slice(separatorIndex + 1).trim();
+	if (!isImageSizeToken(maybeSize)) {
+		return altText;
+	}
+
+	return altText.slice(0, separatorIndex).trim();
+}
+
+function isImageSizeToken(value: string): boolean {
+	const normalized = value.trim().toLowerCase();
+	return /^\d+%?$/.test(normalized) || /^\d+x\d+$/.test(normalized);
 }
