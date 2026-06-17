@@ -180,6 +180,61 @@ export class ImageHandler {
 		this.showBatchUploadSummary(successCount, failedCount, skippedCount);
 	}
 
+	/**
+	 * 基于内容的批量上传核心（不依赖编辑器），供自动监听等外部写入场景复用。
+	 * 传入笔记内容字符串，上传其中可上传的本地/远程图片，返回替换后的新内容与计数。
+	 * 复用与「批量替换当前笔记图片链接」命令完全相同的提取/过滤/上传/替换原语。
+	 */
+	async uploadImagesInText(
+		originalContent: string,
+		sourceFile: TFile | null,
+		sourcePath: string
+	): Promise<{ content: string; success: number; failed: number; skipped: number }> {
+		const allReferences = extractMarkdownAndWikiImageReferences(originalContent);
+		const settings = this.getSettings?.();
+		const excludedDomains = this.getExcludedDomains(settings);
+		const uploadableReferences = allReferences.filter((reference) => {
+			if (!reference.isRemote) {
+				return true;
+			}
+			return Boolean(settings?.enableNetworkImageUpload) && !this.isExcludedRemoteUrl(reference.path, excludedDomains);
+		});
+
+		if (uploadableReferences.length === 0) {
+			return { content: originalContent, success: 0, failed: 0, skipped: 0 };
+		}
+
+		const replacements: TextReplacement[] = [];
+		let successCount = 0;
+		let failedCount = 0;
+		const skippedCount = allReferences.length - uploadableReferences.length;
+
+		for (const reference of uploadableReferences) {
+			const uploadedUrl = reference.isRemote
+				? await this.uploadRemoteImage(reference.path, reference.altText, sourceFile)
+				: await this.uploadLocalImageReference(reference, sourcePath, sourceFile);
+
+			if (!uploadedUrl) {
+				failedCount++;
+				continue;
+			}
+
+			replacements.push({
+				index: reference.index,
+				length: reference.length,
+				replacement: this.buildReplacementForReference(reference, uploadedUrl)
+			});
+			successCount++;
+		}
+
+		return {
+			content: successCount > 0 ? this.applyReplacements(originalContent, replacements) : originalContent,
+			success: successCount,
+			failed: failedCount,
+			skipped: skippedCount
+		};
+	}
+
 	selectAndUploadImage(): void {
 		// 检查是否在移动端环境
 		const isMobile = Platform.isMobile;

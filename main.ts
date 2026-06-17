@@ -3,6 +3,7 @@ import { CFImageBedSettings, DEFAULT_SETTINGS } from './src/types';
 import { UploadService } from './src/upload/uploadService';
 import { ImageHandler } from './src/upload/imageHandler';
 import { EventHandlers } from './src/events/eventHandlers';
+import { AutoUploadWatcher } from './src/events/autoUploadWatcher';
 import { CFImageBedSettingTab } from './src/settings/settingsTab';
 import { I18n, resolveLanguage } from './src/utils/i18n';
 import { parseDomainList } from './src/utils/domainUtils';
@@ -12,6 +13,7 @@ export default class CFImageBedPlugin extends Plugin {
 	private uploadService: UploadService;
 	private imageHandler: ImageHandler;
 	private eventHandlers: EventHandlers;
+	private autoUploadWatcher: AutoUploadWatcher;
 	private i18n: I18n;
 
 	async onload() {
@@ -29,6 +31,11 @@ export default class CFImageBedPlugin extends Plugin {
 		this.eventHandlers.registerDragAndDropEvents(this);
 		this.eventHandlers.registerPasteEvents(this);
 		this.eventHandlers.registerEditorMenuEvents(this);
+
+		// 自动上传监听器（AI 经 CLI 写文件 / Web Clip 等外部写入时自动转存图床）。
+		// 在 onLayoutReady 之后再注册，避免 Obsidian 启动时对全库触发 create 事件。
+		this.autoUploadWatcher = new AutoUploadWatcher(this, this.imageHandler, () => this.settings, this.i18n);
+		this.app.workspace.onLayoutReady(() => this.autoUploadWatcher.register());
 
 		// 移动端专用命令：支持相机拍照和相册选择
 		this.addCommand({

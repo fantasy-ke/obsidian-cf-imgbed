@@ -152,6 +152,20 @@ const translations: Record<Language, Translations> = {
 					name: '启用网络图片上传',
 					desc: '开启后，粘贴外链图片或执行“上传当前文档所有图片”命令时，会先抓取外链并上传到自己的图床；失败时保持原链接'
 				},
+				enableAutoUpload: {
+					name: '自动上传（外部写入时）',
+					desc: '监听文件改动：AI 经 CLI 写文件、Web Clip 存网页等从外部写入笔记时，自动把其中的本地/远程图片转存到图床并改写链接。需 Obsidian 处于运行状态；远程图片还需开启“启用网络图片上传”'
+				},
+				autoUploadFolders: {
+					name: '自动上传 · 监听文件夹',
+					desc: '逗号分隔的文件夹（如 clippings, inbox），留空表示监听整个库',
+					placeholder: '留空 = 整个库'
+				},
+				autoUploadDebounceMs: {
+					name: '自动上传 · 防抖（毫秒）',
+					desc: '文件停止改动多久后再处理，避免处理写到一半的内容。默认 2000，最小 500',
+					placeholder: '2000'
+				},
 				excludedImageDomains: {
 					name: '网络图片排除域名',
 					desc: '这些域名的图片链接不会重复上传，支持逗号或换行分隔。当前 API URL 域名会自动加入排除列表',
@@ -216,6 +230,7 @@ const translations: Record<Language, Translations> = {
 			noUploadableImages: '当前文档没有可上传的图片',
 			uploadingCurrentNoteImages: '正在上传当前文档中的 {count} 张图片...',
 			documentChangedSkipReplace: '文档内容已变化，本次未自动替换链接',
+			autoUploadSummary: 'CF ImageBed：已自动转存 {count} 张图片 → {file}',
 			checkFileSystemPermission: '请检查浏览器权限设置，允许访问文件系统',
 			uploadingImage: '正在上传图片...',
 			uploadSuccess: '图片上传成功：{url}',
@@ -403,6 +418,20 @@ const translations: Record<Language, Translations> = {
 					name: 'Enable remote image upload',
 					desc: 'When enabled, pasted remote image links and the “upload current note images” command will fetch remote images and upload them to your image bed. Failed uploads keep the original link.'
 				},
+				enableAutoUpload: {
+					name: 'Auto-upload on external write',
+					desc: 'Watch file changes: when notes are written from outside the editor (AI via CLI, web clipper, …), automatically upload their local/remote images and rewrite the links. Requires Obsidian to be running; remote images also need “Enable remote image upload”.'
+				},
+				autoUploadFolders: {
+					name: 'Auto-upload · watched folders',
+					desc: 'Comma-separated folders (e.g. clippings, inbox). Leave empty to watch the whole vault.',
+					placeholder: 'Empty = whole vault'
+				},
+				autoUploadDebounceMs: {
+					name: 'Auto-upload · debounce (ms)',
+					desc: 'How long to wait after the last change before processing, so half-written content is never touched. Default 2000, minimum 500.',
+					placeholder: '2000'
+				},
 				excludedImageDomains: {
 					name: 'Excluded remote domains',
 					desc: 'Images from these domains will not be uploaded again. Separate domains with commas or new lines. The current API URL domain is always excluded automatically.',
@@ -467,6 +496,7 @@ const translations: Record<Language, Translations> = {
 			noUploadableImages: 'No uploadable images found in the current note',
 			uploadingCurrentNoteImages: 'Uploading {count} images from the current note...',
 			documentChangedSkipReplace: 'The note content changed, so links were not replaced automatically',
+			autoUploadSummary: 'CF ImageBed: auto-uploaded {count} image(s) → {file}',
 			checkFileSystemPermission: 'Please check browser permissions and allow file system access',
 			uploadingImage: 'Uploading image...',
 			uploadSuccess: 'Image uploaded successfully: {url}',
