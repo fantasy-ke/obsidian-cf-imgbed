@@ -75,8 +75,14 @@ const translations: Record<Language, Translations> = {
 					desc: '选择返回链接格式',
 					options: {
 						default: '默认格式 /file/id',
-						full: '完整链接格式'
+						full: '完整链接格式',
+						custom: '自定义链接格式'
 					}
+				},
+				customReturnFormatPattern: {
+					name: '自定义返回链接模板',
+					desc: '仅在自定义链接格式时生效。支持 ${src}（服务器返回路径）和 ${apiUrl}（API 地址）',
+					placeholder: '${apiUrl}/${src}'
 				},
 				uploadFolder: {
 					name: '上传目录',
@@ -320,8 +326,14 @@ const translations: Record<Language, Translations> = {
 					desc: 'Select return link format',
 					options: {
 						default: 'Default format /file/id',
-						full: 'Full link format'
+						full: 'Full link format',
+						custom: 'Custom link format'
 					}
+				},
+				customReturnFormatPattern: {
+					name: 'Custom return link template',
+					desc: 'Used only in custom link format. Supports ${src} (server returned path) and ${apiUrl} (API URL)',
+					placeholder: '${apiUrl}/${src}'
 				},
 				uploadFolder: {
 					name: 'Upload folder',

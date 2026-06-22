@@ -10,6 +10,7 @@ export interface CFImageBedSettings {
 	uploadNameType: string;
 	customUploadNamePattern: string;
 	returnFormat: string;
+	customReturnFormatPattern: string;
 	uploadFolder: string;
 	serverCompress: boolean;
 	autoRetry: boolean;
@@ -55,6 +56,7 @@ export const DEFAULT_SETTINGS: CFImageBedSettings = {
 	uploadNameType: 'default',
 	customUploadNamePattern: '${noteFileName}-${datetime}-${originalAttachmentFileName}',
 	returnFormat: 'default',
+	customReturnFormatPattern: '${apiUrl}/${src}',
 	uploadFolder: '',
 	serverCompress: false,
 	autoRetry: true,

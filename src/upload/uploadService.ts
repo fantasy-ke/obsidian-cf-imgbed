@@ -2,7 +2,7 @@ import { App, Notice, getLanguage, normalizePath, requestUrl, TFile, TFolder } f
 import { CFImageBedSettings } from '../types';
 import { ClientCompressor } from '../utils/clientCompressor';
 import { ClientWatermark } from '../utils/clientWatermark';
-import { buildCustomUploadFile, resolveTemplatePath } from '../utils/templateResolver';
+import { buildCustomUploadFile, resolveReturnUrl, resolveTemplatePath } from '../utils/templateResolver';
 import { I18n, resolveLanguage } from '../utils/i18n';
 
 interface UploadRuntimeConfig {
@@ -124,6 +124,12 @@ export class UploadService {
 				if (this.settings.returnFormat === 'full') {
 					// 完整链接格式，直接返回
 					return src;
+				} else if (this.settings.returnFormat === 'custom') {
+					// 自定义链接格式，使用模板构建
+					return resolveReturnUrl(this.settings.customReturnFormatPattern, {
+						src,
+						apiUrl: this.settings.apiUrl
+					});
 				} else {
 					// 默认格式，需要拼接API URL
 					const fullUrl = `${this.settings.apiUrl}${src}`;

@@ -139,3 +139,25 @@ function createUuid(): string {
 		return value.toString(16);
 	});
 }
+
+export interface ReturnUrlContext {
+	src: string;
+	apiUrl: string;
+}
+
+export function resolveReturnUrl(template: string, context: ReturnUrlContext): string {
+	if (!template.trim()) {
+		return context.src;
+	}
+
+	return template.replace(/\$\{(src|apiUrl)\}/g, (_match, token: string) => {
+		switch (token) {
+			case 'src':
+				return context.src;
+			case 'apiUrl':
+				return context.apiUrl.replace(/\/+$/, '');
+			default:
+				return _match;
+		}
+	});
+}

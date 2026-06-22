@@ -229,11 +229,26 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 			.addDropdown((dropdown: DropdownComponent) => dropdown
 				.addOption('default', this.i18n.t('settings.basic.returnFormat.options.default'))
 				.addOption('full', this.i18n.t('settings.basic.returnFormat.options.full'))
+				.addOption('custom', this.i18n.t('settings.basic.returnFormat.options.custom'))
 				.setValue(this.plugin.settings.returnFormat)
 				.onChange(async (value: string) => {
 					this.plugin.settings.returnFormat = value;
 					await this.plugin.saveSettings();
+					this.display();
 				}));
+
+		if (this.plugin.settings.returnFormat === 'custom') {
+			new Setting(container)
+				.setName(this.i18n.t('settings.basic.customReturnFormatPattern.name'))
+				.setDesc(`${this.i18n.t('settings.basic.customReturnFormatPattern.desc')}\n${templateHint}`)
+				.addText((text: TextComponent) => text
+					.setPlaceholder(this.i18n.t('settings.basic.customReturnFormatPattern.placeholder'))
+					.setValue(this.plugin.settings.customReturnFormatPattern || '')
+					.onChange(async (value: string) => {
+						this.plugin.settings.customReturnFormatPattern = value;
+						await this.plugin.saveSettings();
+					}));
+		}
 
 		// 上传目录设置
 		new Setting(container)
