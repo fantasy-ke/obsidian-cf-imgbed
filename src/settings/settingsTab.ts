@@ -233,7 +233,22 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.onChange(async (value: string) => {
 					this.plugin.settings.returnFormat = value;
 					await this.plugin.saveSettings();
+					this.display();
 				}));
+
+		// 自定义返回链接前缀（仅默认格式时显示）
+		if (this.plugin.settings.returnFormat !== 'full') {
+			new Setting(container)
+				.setName(this.i18n.t('settings.basic.customReturnBaseUrl.name'))
+				.setDesc(this.i18n.t('settings.basic.customReturnBaseUrl.desc'))
+				.addText((text: TextComponent) => text
+					.setPlaceholder(this.i18n.t('settings.basic.customReturnBaseUrl.placeholder'))
+					.setValue(this.plugin.settings.customReturnBaseUrl || '')
+					.onChange(async (value: string) => {
+						this.plugin.settings.customReturnBaseUrl = value.trim();
+						await this.plugin.saveSettings();
+					}));
+		}
 
 		// 上传目录设置
 		new Setting(container)

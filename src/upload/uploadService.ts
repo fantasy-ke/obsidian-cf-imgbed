@@ -125,9 +125,9 @@ export class UploadService {
 					// 完整链接格式，直接返回
 					return src;
 				} else {
-					// 默认格式，需要拼接API URL
-					const fullUrl = `${this.settings.apiUrl}${src}`;
-					return fullUrl;
+					// 默认格式，需要拼接基础 URL（优先使用自定义前缀，否则回退到 API URL）
+					const baseUrl = this.settings.customReturnBaseUrl?.trim() || this.settings.apiUrl;
+					return `${baseUrl}${src}`;
 				}
 			} else {
 				throw new Error(this.i18n.t('errors.serverResponseInvalid'));

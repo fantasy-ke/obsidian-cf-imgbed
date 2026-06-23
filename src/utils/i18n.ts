@@ -78,6 +78,11 @@ const translations: Record<Language, Translations> = {
 						full: '完整链接格式'
 					}
 				},
+				customReturnBaseUrl: {
+					name: '自定义返回链接前缀',
+					desc: '默认格式下拼接返回链接时使用的基础 URL，为空时使用 API URL',
+					placeholder: 'https://cdn.example.com'
+				},
 				uploadFolder: {
 					name: '上传目录',
 					desc: '上传目录，使用相对路径',
@@ -322,6 +327,11 @@ const translations: Record<Language, Translations> = {
 						default: 'Default format /file/id',
 						full: 'Full link format'
 					}
+				},
+				customReturnBaseUrl: {
+					name: 'Custom return URL prefix',
+					desc: 'Base URL used when concatenating the return link in default format. Falls back to API URL when empty.',
+					placeholder: 'https://cdn.example.com'
 				},
 				uploadFolder: {
 					name: 'Upload folder',
