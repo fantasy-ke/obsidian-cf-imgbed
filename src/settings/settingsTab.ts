@@ -1,19 +1,19 @@
 import { App, DropdownComponent, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent, getLanguage } from 'obsidian';
 import CFImageBedPlugin from '../../main';
 import { I18n, resolveLanguage } from '../utils/i18n';
-import { UploadChannel } from '../types';
+import { UploadChannel, UPLOAD_CHANNELS, Language, LANGUAGES } from '../types';
 import { extractHostname, formatDomainList, parseDomainList } from '../utils/domainUtils';
 
 export class CFImageBedSettingTab extends PluginSettingTab {
 	plugin: CFImageBedPlugin;
 	private i18n: I18n;
 
-	private isLanguage(value: string): value is 'zh' | 'en' {
-		return value === 'zh' || value === 'en';
+	private isLanguage(value: string): value is Language {
+		return (LANGUAGES as readonly string[]).includes(value);
 	}
 
 	private isUploadChannel(value: string): value is UploadChannel {
-		return value === 'telegram' || value === 'cfr2' || value === 's3' || value === 'discord' || value === 'huggingface';
+		return (UPLOAD_CHANNELS as readonly string[]).includes(value);
 	}
 
 	constructor(app: App, plugin: CFImageBedPlugin) {
@@ -151,6 +151,7 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 				.addOption('s3', this.i18n.t('settings.basic.uploadChannel.options.s3'))
 				.addOption('discord', this.i18n.t('settings.basic.uploadChannel.options.discord'))
 				.addOption('huggingface', this.i18n.t('settings.basic.uploadChannel.options.huggingface'))
+				.addOption('webdav', this.i18n.t('settings.basic.uploadChannel.options.webdav'))
 				.setValue(this.plugin.settings.uploadChannel)
 				.onChange(async (value: string) => {
 					if (!this.isUploadChannel(value)) {

@@ -1,4 +1,8 @@
-export type UploadChannel = 'telegram' | 'cfr2' | 's3' | 'discord' | 'huggingface';
+export const UPLOAD_CHANNELS = ['telegram', 'cfr2', 's3', 'discord', 'huggingface', 'webdav'] as const;
+export type UploadChannel = (typeof UPLOAD_CHANNELS)[number];
+
+export const LANGUAGES = ['zh', 'en'] as const;
+export type Language = (typeof LANGUAGES)[number];
 
 export interface CFImageBedSettings {
 	// 基础配置
@@ -45,7 +49,7 @@ export interface CFImageBedSettings {
 	customReturnBaseUrl: string;
 
 	// 语言配置
-	language: 'zh' | 'en';
+	language: Language;
 }
 
 export const DEFAULT_SETTINGS: CFImageBedSettings = {

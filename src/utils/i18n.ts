@@ -42,7 +42,8 @@ const translations: Record<Language, Translations> = {
 						cfr2: 'Cloudflare R2',
 						s3: 'S3 兼容存储',
 						discord: 'Discord',
-						huggingface: 'HuggingFace'
+					huggingface: 'HuggingFace',
+					webdav: 'WebDAV'
 					}
 				},
 				channelName: {
@@ -292,7 +293,8 @@ const translations: Record<Language, Translations> = {
 						cfr2: 'Cloudflare R2',
 						s3: 'S3 compatible storage',
 						discord: 'Discord',
-						huggingface: 'HuggingFace'
+					huggingface: 'HuggingFace',
+					webdav: 'WebDAV'
 					}
 				},
 				channelName: {
