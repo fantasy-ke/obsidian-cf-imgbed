@@ -1,6 +1,6 @@
 {
 	"name": "cf-image-bed",
-	"version": "1.0.8",
+	"version": "1.0.9",
 	"description": "Upload images to CloudFlare ImgBed's plugin, which supports drag and drop, paste and select file uploads.",
 	"main": "main.js",
 	"scripts": {

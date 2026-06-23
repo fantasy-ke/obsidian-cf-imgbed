@@ -54,11 +54,12 @@ An image upload plugin for Obsidian that uploads images to CloudFlare ImgBed. It
 
 ### 2. 可选配置
 
-- **上传渠道**：选择 `telegram`、`cfr2`、`s3`、`discord` 或 `huggingface`
+- **上传渠道**：选择 `telegram`、`cfr2`、`s3`、`discord`、`huggingface` 或 `webdav`
 - **渠道名称**：在多渠道部署下指定具体渠道实例
 - **分块大小**：始终显示；Telegram 默认 16MB，Discord 默认 8MB，其他渠道默认 0，`0` 表示关闭分块上传
 - **文件命名方式**：选择文件命名规则；`custom` 模式会先按占位符模板重命名，再以原文件名方式上传
 - **返回链接格式**：选择返回的链接格式
+- **自定义返回链接前缀**：仅在默认格式下显示；填写后，拼接返回链接时使用该前缀替代 API URL，为空时仍使用 API URL
 - **上传目录**：指定上传到特定目录（可选），支持占位符
 - **服务端压缩**：始终显示，仅 Telegram 渠道可修改，默认关闭
 - **自动重试**：失败时是否自动切换渠道重试
@@ -116,6 +117,7 @@ An image upload plugin for Obsidian that uploads images to CloudFlare ImgBed. It
 | S3 兼容存储 | 选择多样、价格灵活 | 根据服务商定价 |
 | Discord | 完全免费、简单易用 | 大于 10MB 文件需分片存储 |
 | HuggingFace | 完全免费、支持大文件直传 | 需要 HuggingFace 账号 |
+| WebDAV | 支持标准 WebDAV 协议的私有存储 | 需要自行搭建或使用支持 WebDAV 的服务 |
 
 ### 3. 上传图片
 
@@ -203,7 +205,23 @@ An image upload plugin for Obsidian that uploads images to CloudFlare ImgBed. It
 ## 版本更新历史
 
 <details>
-<summary><strong>v1.0.8 (最新版本)</strong></summary>
+<summary><strong>v1.0.9 (最新版本)</strong></summary>
+
+### 新功能
+- feat: 新增 `webdav` 上传渠道
+- feat: 新增「自定义返回链接前缀」设置，默认格式下可用自定义 URL 替代 API URL 拼接返回链接
+
+### 修复
+- fix: Wiki 嵌入 `![[image.png|200]]` 上传后会错误替换为 `![[http://…|200]]`，Obsidian 无法渲染该内嵌语法的 HTTP 链接，现已自动转换为标准 Markdown 格式并保留尺寸参数
+
+### 代码优化
+- refactor: `reference.syntax` 判断由硬编码字符串改为 `ImageSyntax` 枚举
+- refactor: `UploadChannel` 与 `Language` 类型改用 `as const` 数组派生，类型守卫统一使用 `includes` 判断
+
+</details>
+
+<details>
+<summary><strong>v1.0.8</strong></summary>
 
 ### 修复
 - fix: 修复 Markdown 格式图片上传不成功的问题

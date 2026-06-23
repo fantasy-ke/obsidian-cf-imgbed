@@ -52,11 +52,12 @@ An Obsidian plugin for uploading images to CloudFlare ImgBed with local image up
 
 ### 2. Optional Configuration
 
-- **Upload Channel**: Choose `telegram`, `cfr2`, `s3`, `discord`, or `huggingface`
+- **Upload Channel**: Choose `telegram`, `cfr2`, `s3`, `discord`, `huggingface`, or `webdav`
 - **Channel Name**: Specify a concrete channel instance in multi-channel deployments
 - **Chunk Size**: Always shown. Telegram defaults to 16MB, Discord to 8MB, and other channels default to 0. `0` disables chunked upload
 - **File Naming**: Select file naming rules. In `custom` mode, the file is renamed with placeholders first, then uploaded using the original-name mode
 - **Return Format**: Choose return link format
+- **Custom Return URL Prefix**: Only shown in default format mode. When set, this prefix replaces the API URL when constructing the return link; falls back to API URL when empty
 - **Upload Folder**: Specify upload directory (optional). Placeholders are supported
 - **Server Compression**: Always shown, only editable for the Telegram channel, and disabled by default
 - **Auto Retry**: Automatically switch channels on failure
@@ -114,6 +115,7 @@ The following settings support placeholders:
 | S3 compatible storage | Flexible vendors and pricing | Pricing depends on the provider |
 | Discord | Completely free and easy to use | Files larger than 10MB require chunk storage |
 | HuggingFace | Completely free and supports large direct uploads | Requires a HuggingFace account |
+| WebDAV | Private storage via standard WebDAV protocol | Requires a self-hosted or WebDAV-compatible service |
 
 ### 3. Upload Images
 
@@ -202,7 +204,23 @@ For detailed API documentation, please refer to CloudFlare ImgBed official [docu
 ## Version History
 
 <details>
-<summary><strong>v1.0.8 (Latest)</strong></summary>
+<summary><strong>v1.0.9 (Latest)</strong></summary>
+
+### New Features
+- feat: Add `webdav` upload channel
+- feat: Add **Custom Return URL Prefix** setting — in default format mode, a custom base URL can replace the API URL when constructing return links
+
+### Fixes
+- fix: Wiki embed `![[image.png|200]]` was incorrectly replaced with `![[http://…|200]]` after upload. Obsidian cannot render HTTP links inside `![[]]` embeds, so the link is now automatically converted to standard Markdown format while preserving size parameters
+
+### Refactoring
+- refactor: Replace hardcoded `reference.syntax` string comparisons with `ImageSyntax` enum
+- refactor: Derive `UploadChannel` and `Language` types from `as const` arrays; type guards unified to use `includes`
+
+</details>
+
+<details>
+<summary><strong>v1.0.8</strong></summary>
 
 ### Fixes
 - fix: Fixed Markdown-format image uploads that could fail unexpectedly
