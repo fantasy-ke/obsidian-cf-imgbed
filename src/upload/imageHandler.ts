@@ -4,6 +4,7 @@ import { UploadService } from './uploadService';
 import { I18n } from '../utils/i18n';
 import {
 	ClipboardHtmlImage,
+	ImageSyntax,
 	ParsedImageReference,
 	extractClipboardHtmlImages,
 	extractMarkdownAndWikiImageReferences,
@@ -677,7 +678,7 @@ export class ImageHandler {
 	}
 
 	private buildReplacementForReference(reference: ParsedImageReference, uploadedUrl: string): string {
-		if (reference.syntax === 'wiki') {
+		if (reference.syntax === ImageSyntax.Wiki) {
 			const wikiMatch = reference.source.match(/^!\[\[(.*)\]\]$/);
 			if (wikiMatch) {
 				const segments = wikiMatch[1].split('|');
@@ -698,7 +699,7 @@ export class ImageHandler {
 			}
 		}
 
-		if (reference.syntax === 'markdown') {
+		if (reference.syntax === ImageSyntax.Markdown) {
 			const angleStyleMatch = reference.source.match(
 				/^!\[(.*?)\]\(<([^>]+)>(\s+(?:"[^"]*"|'[^']*'))?\)$/
 			);

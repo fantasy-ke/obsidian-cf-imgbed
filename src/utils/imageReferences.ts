@@ -1,10 +1,16 @@
+export enum ImageSyntax {
+	Markdown = 'markdown',
+	Wiki = 'wiki',
+	Url = 'url'
+}
+
 export interface ParsedImageReference {
 	source: string;
 	path: string;
 	altText: string;
 	index: number;
 	length: number;
-	syntax: 'markdown' | 'wiki' | 'url';
+	syntax: ImageSyntax;
 	isRemote: boolean;
 }
 
@@ -38,7 +44,7 @@ export function extractMarkdownAndWikiImageReferences(
 			altText: normalizeMarkdownAltText(rawAltText),
 			index: match.index ?? 0,
 			length: match[0].length,
-			syntax: 'markdown',
+			syntax: ImageSyntax.Markdown,
 			isRemote: isRemotePath(path)
 		});
 	}
@@ -56,7 +62,7 @@ export function extractMarkdownAndWikiImageReferences(
 			altText: wikiParts.altText,
 			index: match.index ?? 0,
 			length: match[0].length,
-			syntax: 'wiki',
+			syntax: ImageSyntax.Wiki,
 			isRemote: isRemotePath(path)
 		});
 	}
@@ -80,7 +86,7 @@ export function extractPlainImageUrlReferences(content: string): ParsedImageRefe
 			altText: '',
 			index: match.index ?? 0,
 			length: path.length,
-			syntax: 'url',
+			syntax: ImageSyntax.Url,
 			isRemote: true
 		});
 	}
@@ -92,7 +98,7 @@ export function extractPlainImageUrlReferences(content: string): ParsedImageRefe
 			altText: '',
 			index: content.indexOf(trimmedContent),
 			length: trimmedContent.length,
-			syntax: 'url',
+			syntax: ImageSyntax.Url,
 			isRemote: true
 		});
 	}
