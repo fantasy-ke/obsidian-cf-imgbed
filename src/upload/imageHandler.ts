@@ -682,6 +682,16 @@ export class ImageHandler {
 			if (wikiMatch) {
 				const segments = wikiMatch[1].split('|');
 				if (segments.length > 0) {
+					// 上传后图片已变为远程 URL，而 Obsidian 的 ![[ ]] 嵌入只解析库内文件，
+					// 无法渲染 http(s) 或绝对路径链接，会显示为损坏的内部嵌入。
+					// 此时转成标准 Markdown，并把原来的尺寸段（如 |200）作为 Markdown alt
+					// 携带过去以保留宽高（Obsidian 中纯数字 alt 即为图片宽度）。
+					const isRemoteUrl = /^https?:\/\//i.test(uploadedUrl) || uploadedUrl.startsWith('/');
+					if (isRemoteUrl) {
+						const sizeOrAlt = segments.slice(1).join('|').trim();
+						const altText = sizeOrAlt || this.getFallbackImageName(reference.path);
+						return this.buildMarkdownImage(altText, uploadedUrl, this.getFallbackImageName(reference.path));
+					}
 					segments[0] = uploadedUrl;
 					return `![[${segments.join('|')}]]`;
 				}
