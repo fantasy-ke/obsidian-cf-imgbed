@@ -45,6 +45,30 @@ export class ImageHandler {
 		await this.uploadImageToEditor(file);
 	}
 
+	async uploadImageToExcalidraw(
+		file: File,
+		noteFile: TFile | null,
+		insertUploadedImage: (imageUrl: string) => Promise<void>
+	): Promise<void> {
+		const settings = this.getSettings?.();
+		if (settings?.showUploadProgress) {
+			new Notice(this.i18n?.t('notices.uploadingImage') || 'Uploading image...');
+		}
+
+		const imageUrl = await this.uploadService.uploadImage(file, { noteFile });
+		if (!imageUrl) {
+			return;
+		}
+
+		await insertUploadedImage(imageUrl);
+		if (settings?.showSuccessNotification) {
+			new Notice(
+				this.i18n?.t('notices.uploadSuccess', { url: imageUrl }) || `Image uploaded successfully: ${imageUrl}`,
+				(settings.notificationDuration ?? 5) * 1000
+			);
+		}
+	}
+
 	async handleEditorPaste(evt: ClipboardEvent, editor: Editor): Promise<void> {
 		const clipboardData = evt.clipboardData;
 		if (!clipboardData) {

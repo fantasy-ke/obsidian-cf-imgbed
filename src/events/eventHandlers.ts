@@ -1,6 +1,7 @@
 import { Plugin, Menu, Editor, MarkdownView } from 'obsidian';
 import { ImageHandler } from '../upload/imageHandler';
 import { I18n } from '../utils/i18n';
+import { ExcalidrawIntegration } from './excalidrawIntegration';
 
 export class EventHandlers {
 	constructor(
@@ -30,6 +31,10 @@ export class EventHandlers {
 				}
 			}
 		}, true); // 使用捕获阶段，确保优先处理
+	}
+
+	registerExcalidrawEvents(plugin: Plugin): void {
+		new ExcalidrawIntegration(this.imageHandler).register(plugin);
 	}
 
 	registerPasteEvents(plugin: Plugin): void {

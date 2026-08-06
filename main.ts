@@ -28,6 +28,7 @@ export default class CFImageBedPlugin extends Plugin {
 		// 注册事件处理器
 		this.eventHandlers.registerDragAndDropEvents(this);
 		this.eventHandlers.registerPasteEvents(this);
+		this.eventHandlers.registerExcalidrawEvents(this);
 		this.eventHandlers.registerEditorMenuEvents(this);
 
 		// 移动端专用命令：支持相机拍照和相册选择
