@@ -469,6 +469,39 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		new Setting(container)
+			.setName(this.i18n.t('settings.advanced.enableAutoUpload.name'))
+			.setDesc(this.i18n.t('settings.advanced.enableAutoUpload.desc'))
+			.addToggle((toggle: ToggleComponent) => toggle
+				.setValue(this.plugin.settings.enableAutoUpload)
+				.onChange(async (value: boolean) => {
+					this.plugin.settings.enableAutoUpload = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(container)
+			.setName(this.i18n.t('settings.advanced.autoUploadFolders.name'))
+			.setDesc(this.i18n.t('settings.advanced.autoUploadFolders.desc'))
+			.addText((text) => text
+				.setPlaceholder(this.i18n.t('settings.advanced.autoUploadFolders.placeholder'))
+				.setValue(this.plugin.settings.autoUploadFolders)
+				.onChange(async (value: string) => {
+					this.plugin.settings.autoUploadFolders = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(container)
+			.setName(this.i18n.t('settings.advanced.autoUploadDebounceMs.name'))
+			.setDesc(this.i18n.t('settings.advanced.autoUploadDebounceMs.desc'))
+			.addText((text) => text
+				.setPlaceholder(this.i18n.t('settings.advanced.autoUploadDebounceMs.placeholder'))
+				.setValue(String(this.plugin.settings.autoUploadDebounceMs))
+				.onChange(async (value: string) => {
+					const parsed = parseInt(value, 10);
+					this.plugin.settings.autoUploadDebounceMs = Number.isFinite(parsed) && parsed > 0 ? parsed : 2000;
+					await this.plugin.saveSettings();
+				}));
+
 		const autoExcludedDomain = extractHostname(this.plugin.settings.apiUrl);
 		const excludedDescSuffix = autoExcludedDomain
 			? `\n${this.i18n.getLanguage() === 'zh' ? '当前自动排除：' : 'Auto excluded:'} ${autoExcludedDomain}`
