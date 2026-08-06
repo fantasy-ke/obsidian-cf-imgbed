@@ -1,0 +1,130 @@
+name: Dev Build
+
+# ????? dev ?????????????? dev-latest ??????
+on:
+  push:
+    branches:
+      - dev
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PLUGIN_ID: cf-imagebed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Package development build
+        id: package
+        shell: bash
+        env:
+          PLUGIN_ID: ${{ env.PLUGIN_ID }}
+        run: |
+          set -euo pipefail
+
+          DEV_VERSION="dev-${GITHUB_SHA:0:7}"
+          RELEASE_DIR="release-assets"
+          PLUGIN_DIR="${RELEASE_DIR}/${PLUGIN_ID}"
+          ZIP_NAME="${PLUGIN_ID}-${DEV_VERSION}.zip"
+
+          mkdir -p "${PLUGIN_DIR}"
+          cp main.js manifest.json styles.css "${PLUGIN_DIR}/"
+          cp main.js manifest.json styles.css "${RELEASE_DIR}/"
+
+          (
+            cd "${RELEASE_DIR}"
+            zip -r "${ZIP_NAME}" "${PLUGIN_ID}"
+          )
+
+          echo "dev_version=${DEV_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Development package contents:"
+          find "${RELEASE_DIR}" -maxdepth 2 -type f -print | sort
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PLUGIN_ID }}-${{ steps.package.outputs.dev_version }}
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Reset dev-latest release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = 'dev-latest';
+            const { owner, repo } = context.repo;
+
+            try {
+              const { data: release } = await github.rest.repos.getReleaseByTag({
+                owner,
+                repo,
+                tag,
+              });
+              await github.rest.repos.deleteRelease({
+                owner,
+                repo,
+                release_id: release.id,
+              });
+              core.info(`Deleted existing release: ${release.id}`);
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+              core.info('No existing dev-latest release found.');
+            }
+
+            try {
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: `tags/${tag}`,
+              });
+              core.info(`Deleted existing tag: ${tag}`);
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+              core.info('No existing dev-latest tag found.');
+            }
+
+      - name: Publish dev-latest pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: dev-latest
+          target_commitish: ${{ github.sha }}
+          name: ${{ env.PLUGIN_ID }} Dev Build (${{ steps.package.outputs.dev_version }})
+          prerelease: true
+          draft: false
+          fail_on_unmatched_files: true
+          body: |
+            Development build generated from the `dev` branch.
+
+            - Version: `${{ steps.package.outputs.dev_version }}`
+            - Commit: `${{ github.sha }}`
+            - This is a pre-release for testing only.
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
