@@ -22,12 +22,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "18.x"
+          node-version: "24.x"
           cache: npm
 
       - name: Install dependencies
@@ -63,7 +63,7 @@ jobs:
           find "${RELEASE_DIR}" -maxdepth 2 -type f -print | sort
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ env.PLUGIN_ID }}-${{ steps.package.outputs.dev_version }}
           path: release-assets/*
@@ -71,7 +71,7 @@ jobs:
           retention-days: 7
 
       - name: Reset dev-latest release
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const tag = 'dev-latest';
@@ -96,22 +96,32 @@ jobs:
               core.info('No existing dev-latest release found.');
             }
 
+            let tagExists = true;
             try {
+              await github.rest.git.getRef({
+                owner,
+                repo,
+                ref: `tags/${tag}`,
+              });
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+              tagExists = false;
+              core.info('No existing dev-latest tag found.');
+            }
+
+            if (tagExists) {
               await github.rest.git.deleteRef({
                 owner,
                 repo,
                 ref: `tags/${tag}`,
               });
               core.info(`Deleted existing tag: ${tag}`);
-            } catch (error) {
-              if (error.status !== 404) {
-                throw error;
-              }
-              core.info('No existing dev-latest tag found.');
             }
 
       - name: Publish dev-latest pre-release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: dev-latest
           target_commitish: ${{ github.sha }}
