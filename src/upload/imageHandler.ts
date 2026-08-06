@@ -641,7 +641,18 @@ export class ImageHandler {
 	}
 
 	private async fetchRemoteImageFile(url: string, altText: string): Promise<File> {
-		const response = await requestUrl({ url });
+		// 部分图床/CDN 启用了 Referer 防盗链，直接请求会返回 403。
+		// 带上「图片自身来源站」的 Referer + 浏览器 UA，可绕过绝大多数同域防盗链。
+		const requestHeaders: Record<string, string> = {
+			'User-Agent':
+				'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+		};
+		try {
+			requestHeaders['Referer'] = new URL(url).origin + '/';
+		} catch (_) {
+			// URL 解析失败则不带 Referer
+		}
+		const response = await requestUrl({ url, headers: requestHeaders });
 		if (response.status < 200 || response.status >= 300) {
 			throw new Error(`下载失败：${response.status}`);
 		}
