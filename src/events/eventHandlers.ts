@@ -1,21 +1,29 @@
 import { Plugin, Menu, Editor, MarkdownView } from 'obsidian';
 import { ImageHandler } from '../upload/imageHandler';
 import { I18n } from '../utils/i18n';
-import { ExcalidrawIntegration } from './excalidrawIntegration';
+import { ExcalidrawIntegration, isExcalidrawEventTarget } from './excalidrawIntegration';
+import type { CFImageBedSettings } from '../types';
 
 export class EventHandlers {
 	constructor(
 		private imageHandler: ImageHandler,
-		private i18n: I18n
+		private i18n: I18n,
+		private getSettings: () => CFImageBedSettings
 	) {}
 
 	registerDragAndDropEvents(plugin: Plugin): void {
 		// 添加拖拽上传功能
 		plugin.registerDomEvent(document, 'dragover', (evt: DragEvent) => {
-			evt.preventDefault();
+			if (!isExcalidrawEventTarget(evt.target)) {
+				evt.preventDefault();
+			}
 		});
 
 		plugin.registerDomEvent(document, 'drop', (evt: DragEvent) => {
+			if (isExcalidrawEventTarget(evt.target)) {
+				return;
+			}
+
 			const files = evt.dataTransfer?.files;
 			if (files && files.length > 0) {
 				const imageFiles = Array.from(files).filter(file => 
@@ -34,7 +42,7 @@ export class EventHandlers {
 	}
 
 	registerExcalidrawEvents(plugin: Plugin): void {
-		new ExcalidrawIntegration(this.imageHandler).register(plugin);
+		new ExcalidrawIntegration(this.imageHandler, this.getSettings).register(plugin);
 	}
 
 	registerPasteEvents(plugin: Plugin): void {

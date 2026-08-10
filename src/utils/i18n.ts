@@ -152,6 +152,10 @@ const translations: Record<Language, Translations> = {
 					name: '启用网络图片上传',
 					desc: '开启后，粘贴外链图片或执行“上传当前文档所有图片”命令时，会先抓取外链并上传到自己的图床；失败时保持原链接'
 				},
+				enableExcalidrawUpload: {
+					name: '接管 Excalidraw 图片上传',
+					desc: '开启后，粘贴、拖拽或插入到 Excalidraw 的图片将上传到当前图床；关闭后由 Excalidraw 原生处理'
+				},
 				excludedImageDomains: {
 					name: '网络图片排除域名',
 					desc: '这些域名的图片链接不会重复上传，支持逗号或换行分隔。当前 API URL 域名会自动加入排除列表',
@@ -402,6 +406,10 @@ const translations: Record<Language, Translations> = {
 				enableNetworkImageUpload: {
 					name: 'Enable remote image upload',
 					desc: 'When enabled, pasted remote image links and the “upload current note images” command will fetch remote images and upload them to your image bed. Failed uploads keep the original link.'
+				},
+				enableExcalidrawUpload: {
+					name: 'Handle Excalidraw image uploads',
+					desc: 'When enabled, images pasted, dropped, or inserted into Excalidraw are uploaded to the current image bed. When disabled, Excalidraw handles them normally.'
 				},
 				excludedImageDomains: {
 					name: 'Excluded remote domains',

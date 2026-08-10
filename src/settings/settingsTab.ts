@@ -469,6 +469,16 @@ export class CFImageBedSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		new Setting(container)
+			.setName(this.i18n.t('settings.advanced.enableExcalidrawUpload.name'))
+			.setDesc(this.i18n.t('settings.advanced.enableExcalidrawUpload.desc'))
+			.addToggle((toggle: ToggleComponent) => toggle
+				.setValue(this.plugin.settings.enableExcalidrawUpload)
+				.onChange(async (value: boolean) => {
+					this.plugin.settings.enableExcalidrawUpload = value;
+					await this.plugin.saveSettings();
+				}));
+
 		const autoExcludedDomain = extractHostname(this.plugin.settings.apiUrl);
 		const excludedDescSuffix = autoExcludedDomain
 			? `\n${this.i18n.getLanguage() === 'zh' ? '当前自动排除：' : 'Auto excluded:'} ${autoExcludedDomain}`

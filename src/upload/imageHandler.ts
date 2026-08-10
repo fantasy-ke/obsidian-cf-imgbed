@@ -45,6 +45,15 @@ export class ImageHandler {
 		await this.uploadImageToEditor(file);
 	}
 
+	async uploadVaultImageToExcalidraw(
+		file: TFile,
+		noteFile: TFile | null,
+		insertUploadedImage: (imageUrl: string) => Promise<void>
+	): Promise<void> {
+		const uploadFile = await this.createFileFromTFile(file);
+		await this.uploadImageToExcalidraw(uploadFile, noteFile, insertUploadedImage);
+	}
+
 	async uploadImageToExcalidraw(
 		file: File,
 		noteFile: TFile | null,

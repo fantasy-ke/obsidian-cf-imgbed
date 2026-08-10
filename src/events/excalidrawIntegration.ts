@@ -1,65 +1,89 @@
-import { Plugin, TFile } from 'obsidian';
-import { ImageHandler } from '../upload/imageHandler';
+import type { Plugin, TFile } from 'obsidian';
+import type { CFImageBedSettings } from '../types';
+import type { ImageHandler } from '../upload/imageHandler';
+import {
+	createFileFromPayload,
+	EXCALIDRAW_VIEW_TYPE,
+	getClipboardImageFiles,
+	getScenePosition,
+	isBrowserImage,
+	isExcalidrawEventTarget,
+	isVaultImage,
+	offsetPosition
+} from './excalidrawImageUtils';
+import { ExcalidrawSceneUploadTracker } from './excalidrawSceneUploadTracker';
+import type {
+	ExcalidrawAutomate,
+	ExcalidrawDropHook,
+	ExcalidrawGlobal,
+	ExcalidrawPasteHook,
+	ExcalidrawSceneChangeHook,
+	ExcalidrawView
+} from './excalidrawTypes';
 
-interface ExcalidrawBinaryFile {
-	mimeType?: string;
-	dataURL?: string;
-}
-
-interface ExcalidrawPastePayload {
-	elements?: readonly unknown[];
-	files?: Record<string, ExcalidrawBinaryFile>;
-}
-
-interface ExcalidrawPasteData {
-	ea: {
-		addImage: (topX: number, topY: number, imageFile: string) => Promise<unknown>;
-		addElementsToView: (
-			repositionToCursor?: boolean,
-			save?: boolean,
-			newElementsOnTop?: boolean
-		) => Promise<boolean>;
-	};
-	payload: ExcalidrawPastePayload;
-	event?: ClipboardEvent | null;
-	excalidrawFile: TFile;
-	pointerPosition: { x: number; y: number };
-}
-
-type ExcalidrawPasteHook = (data: ExcalidrawPasteData) => boolean;
-
-interface ExcalidrawAutomate {
-	onPasteHook?: ExcalidrawPasteHook | null;
-}
-
-type ExcalidrawGlobal = typeof globalThis & {
-	ExcalidrawAutomate?: ExcalidrawAutomate;
-};
+export { isExcalidrawEventTarget };
 
 export class ExcalidrawIntegration {
 	private installedAutomate: ExcalidrawAutomate | null = null;
-	private installedHook: ExcalidrawPasteHook | null = null;
+	private operationQueue: Promise<void> = Promise.resolve();
+	private sceneUploadTracker: ExcalidrawSceneUploadTracker;
 
-	constructor(private imageHandler: ImageHandler) {}
-
-	register(plugin: Plugin): void {
-		const installHook = () => this.installPasteHook(plugin);
-		installHook();
-		plugin.app.workspace.onLayoutReady(installHook);
+	constructor(
+		private imageHandler: ImageHandler,
+		private getSettings: () => CFImageBedSettings
+	) {
+		this.sceneUploadTracker = new ExcalidrawSceneUploadTracker(
+			imageHandler,
+			() => this.isEnabled(),
+			(operation) => this.enqueue(operation)
+		);
 	}
 
-	private installPasteHook(plugin: Plugin): void {
+	register(plugin: Plugin): void {
+		const initialize = () => {
+			this.installHooks(plugin);
+			this.sceneUploadTracker.seedOpenViews(plugin);
+		};
+
+		initialize();
+		plugin.app.workspace.onLayoutReady(initialize);
+		plugin.registerEvent(plugin.app.workspace.on('active-leaf-change', (leaf) => {
+			this.installHooks(plugin);
+			if (!leaf) {
+				return;
+			}
+			window.setTimeout(() => {
+				this.sceneUploadTracker.seedView(leaf.view as unknown as ExcalidrawView);
+			}, 0);
+		}));
+
+		plugin.registerDomEvent(document, 'dragover', (event: DragEvent) => {
+			this.handleExternalFileDragOver(event);
+		}, true);
+		plugin.registerDomEvent(document, 'drop', (event: DragEvent) => {
+			this.handleExternalFileDrop(plugin, event);
+		}, true);
+	}
+
+	private installHooks(plugin: Plugin): void {
 		const runtime = globalThis as ExcalidrawGlobal;
 		const automate = runtime.ExcalidrawAutomate;
 		if (!automate || this.installedAutomate === automate) {
 			return;
 		}
 
-		const previousHook = automate.onPasteHook;
-		const hook: ExcalidrawPasteHook = (data) => {
-			if (previousHook) {
+		const previousPasteHook = automate.onPasteHook;
+		const previousDropHook = automate.onDropHook;
+		const previousSceneHook = automate.onSceneChangeHook;
+
+		const pasteHook: ExcalidrawPasteHook = (data) => {
+			if (data.payload.elements?.length) {
+				this.sceneUploadTracker.markPayloadFilesAsKnown(data.view, data.payload);
+			}
+
+			if (previousPasteHook) {
 				try {
-					if (previousHook(data) === false) {
+					if (previousPasteHook(data) === false) {
 						return false;
 					}
 				} catch (error) {
@@ -67,148 +91,222 @@ export class ExcalidrawIntegration {
 				}
 			}
 
-			if (!this.hasExternalImagePaste(data)) {
+			if (!this.isEnabled() || data.payload.elements?.length) {
+				return true;
+			}
+
+			const imageFiles = getClipboardImageFiles(data.event);
+			if (imageFiles.length === 0) {
+				const payloadFile = createFileFromPayload(data.payload);
+				if (payloadFile) {
+					imageFiles.push(payloadFile);
+				}
+			}
+			if (imageFiles.length === 0) {
 				return true;
 			}
 
 			data.event?.preventDefault();
 			data.event?.stopPropagation();
-			void this.handleImagePaste(data);
+			this.enqueue(() => this.handleBrowserFiles(
+				imageFiles,
+				data.excalidrawFile,
+				data.view,
+				data.ea,
+				data.pointerPosition
+			));
 			return false;
 		};
 
-		automate.onPasteHook = hook;
+		const dropHook: ExcalidrawDropHook = (data) => {
+			if (previousDropHook) {
+				try {
+					if (previousDropHook(data) === true) {
+						return true;
+					}
+				} catch (error) {
+					console.error('CF ImageBed: Existing Excalidraw drop hook failed', error);
+				}
+			}
+
+			if (!this.isEnabled() || data.type !== 'file') {
+				return false;
+			}
+
+			const imageFiles = data.payload.files.filter(isVaultImage);
+			if (imageFiles.length === 0) {
+				return false;
+			}
+
+			data.event?.preventDefault();
+			data.event?.stopPropagation();
+			this.enqueue(() => this.handleVaultFiles(
+				imageFiles,
+				data.excalidrawFile,
+				data.view,
+				data.ea,
+				data.pointerPosition
+			));
+			return true;
+		};
+
+		const sceneHook: ExcalidrawSceneChangeHook = {
+			appStateKeys: previousSceneHook?.appStateKeys,
+			trackElements: true,
+			triggerWhenInvisible: previousSceneHook?.triggerWhenInvisible,
+			callback: (elements, appState, files, view, ea) => {
+				if (previousSceneHook) {
+					try {
+						previousSceneHook.callback(elements, appState, files, view, ea);
+					} catch (error) {
+						console.error('CF ImageBed: Existing Excalidraw scene hook failed', error);
+					}
+				}
+				this.sceneUploadTracker.handleSceneChange(elements, files, view, ea);
+			}
+		};
+
+		automate.onPasteHook = pasteHook;
+		automate.onDropHook = dropHook;
+		automate.onSceneChangeHook = sceneHook;
 		this.installedAutomate = automate;
-		this.installedHook = hook;
 
 		plugin.register(() => {
-			if (automate.onPasteHook === hook) {
-				automate.onPasteHook = previousHook;
+			if (automate.onPasteHook === pasteHook) {
+				automate.onPasteHook = previousPasteHook;
 			}
-			if (this.installedAutomate === automate && this.installedHook === hook) {
+			if (automate.onDropHook === dropHook) {
+				automate.onDropHook = previousDropHook;
+			}
+			if (automate.onSceneChangeHook === sceneHook) {
+				automate.onSceneChangeHook = previousSceneHook;
+			}
+			if (this.installedAutomate === automate) {
 				this.installedAutomate = null;
-				this.installedHook = null;
 			}
 		});
 	}
 
-	private hasExternalImagePaste(data: ExcalidrawPasteData): boolean {
-		// Excalidraw clipboard data already contains elements and must keep its native behavior.
-		if (data.payload.elements && data.payload.elements.length > 0) {
-			return false;
+	private handleExternalFileDragOver(event: DragEvent): void {
+		if (!this.isEnabled() || !isExcalidrawEventTarget(event.target)) {
+			return;
 		}
 
-		return Boolean(this.getClipboardImageFile(data.event) || this.getPayloadImage(data.payload));
+		if (Array.from(event.dataTransfer?.types ?? []).includes('Files')) {
+			event.preventDefault();
+		}
 	}
 
-	private async handleImagePaste(data: ExcalidrawPasteData): Promise<void> {
-		try {
-			const file = this.getClipboardImageFile(data.event) ?? this.createFileFromPayload(data.payload);
-			if (!file) {
-				return;
-			}
+	private handleExternalFileDrop(plugin: Plugin, event: DragEvent): void {
+		if (!this.isEnabled() || !isExcalidrawEventTarget(event.target)) {
+			return;
+		}
 
+		const imageFiles = Array.from(event.dataTransfer?.files ?? []).filter(isBrowserImage);
+		if (imageFiles.length === 0) {
+			return;
+		}
+
+		const view = this.findViewForTarget(plugin, event.target);
+		const automate = this.installedAutomate;
+		if (!view?.file || !automate) {
+			return;
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+		this.enqueue(() => this.handleBrowserFiles(
+			imageFiles,
+			view.file as TFile,
+			view,
+			automate,
+			getScenePosition(view, event)
+		));
+	}
+
+	private async handleBrowserFiles(
+		files: File[],
+		noteFile: TFile,
+		view: ExcalidrawView,
+		ea: ExcalidrawAutomate,
+		position: { x: number; y: number }
+	): Promise<void> {
+		for (let index = 0; index < files.length; index++) {
 			await this.imageHandler.uploadImageToExcalidraw(
-				file,
-				data.excalidrawFile,
-				async (imageUrl) => {
-					await data.ea.addImage(data.pointerPosition.x, data.pointerPosition.y, imageUrl);
-					await data.ea.addElementsToView(false, true, true);
-				}
+				files[index],
+				noteFile,
+				(imageUrl) => this.insertUploadedImage(imageUrl, offsetPosition(position, index), view, ea)
 			);
-		} catch (error) {
-			console.error('CF ImageBed: Excalidraw image upload failed', error);
 		}
 	}
 
-	private getClipboardImageFile(event?: ClipboardEvent | null): File | null {
-		const clipboardData = event?.clipboardData;
-		if (!clipboardData) {
+	private async handleVaultFiles(
+		files: TFile[],
+		noteFile: TFile,
+		view: ExcalidrawView,
+		ea: ExcalidrawAutomate,
+		position: { x: number; y: number }
+	): Promise<void> {
+		for (let index = 0; index < files.length; index++) {
+			await this.imageHandler.uploadVaultImageToExcalidraw(
+				files[index],
+				noteFile,
+				(imageUrl) => this.insertUploadedImage(imageUrl, offsetPosition(position, index), view, ea)
+			);
+		}
+	}
+
+	private async insertUploadedImage(
+		imageUrl: string,
+		position: { x: number; y: number },
+		view: ExcalidrawView,
+		ea: ExcalidrawAutomate
+	): Promise<void> {
+		ea.setView(view);
+		ea.clear();
+		try {
+			const elementId = await ea.addImage(position.x, position.y, imageUrl);
+			if (!elementId) {
+				throw new Error('Failed to create the uploaded Excalidraw image');
+			}
+
+			const imageElement = ea.getElement(elementId);
+			if (imageElement?.fileId) {
+				this.sceneUploadTracker.markImageAsKnown(view, imageElement.fileId);
+			}
+
+			const inserted = await ea.addElementsToView(false, true, true);
+			if (!inserted) {
+				throw new Error('Failed to insert the uploaded image into Excalidraw');
+			}
+		} finally {
+			ea.clear();
+		}
+	}
+
+	private findViewForTarget(plugin: Plugin, target: EventTarget | null): ExcalidrawView | null {
+		if (!(target instanceof Node)) {
 			return null;
 		}
 
-		for (const item of Array.from(clipboardData.items)) {
-			if (!item.type.startsWith('image/')) {
-				continue;
-			}
-
-			const file = item.getAsFile();
-			if (file) {
-				return file;
+		for (const leaf of plugin.app.workspace.getLeavesOfType(EXCALIDRAW_VIEW_TYPE)) {
+			const view = leaf.view as unknown as ExcalidrawView;
+			if (view.containerEl?.contains(target)) {
+				return view;
 			}
 		}
-
-		for (const file of Array.from(clipboardData.files)) {
-			if (file.type.startsWith('image/')) {
-				return file;
-			}
-		}
-
 		return null;
 	}
 
-	private getPayloadImage(payload: ExcalidrawPastePayload): ExcalidrawBinaryFile | null {
-		if (!payload.files) {
-			return null;
-		}
-
-		for (const key of Object.keys(payload.files)) {
-			const file = payload.files[key];
-			if (file?.dataURL && (file.mimeType?.startsWith('image/') || file.dataURL.startsWith('data:image/'))) {
-				return file;
-			}
-		}
-
-		return null;
+	private isEnabled(): boolean {
+		return this.getSettings().enableExcalidrawUpload;
 	}
 
-	private createFileFromPayload(payload: ExcalidrawPastePayload): File | null {
-		const image = this.getPayloadImage(payload);
-		if (!image?.dataURL) {
-			return null;
-		}
-
-		const separator = image.dataURL.indexOf(',');
-		if (separator < 0) {
-			return null;
-		}
-
-		const header = image.dataURL.slice(0, separator);
-		const content = image.dataURL.slice(separator + 1);
-		const mimeType = image.mimeType || header.match(/^data:([^;]+)/)?.[1] || 'image/png';
-		const bytes = header.includes(';base64')
-			? this.decodeBase64(content)
-			: this.decodeText(content);
-		if (!bytes) {
-			return null;
-		}
-
-		return new File([bytes], `Pasted image.${this.getExtension(mimeType)}`, { type: mimeType });
-	}
-
-	private decodeBase64(value: string): Uint8Array | null {
-		try {
-			const binary = atob(value);
-			const bytes = new Uint8Array(binary.length);
-			for (let index = 0; index < binary.length; index++) {
-				bytes[index] = binary.charCodeAt(index);
-			}
-			return bytes;
-		} catch (_) {
-			return null;
-		}
-	}
-
-	private decodeText(value: string): Uint8Array | null {
-		try {
-			return new TextEncoder().encode(decodeURIComponent(value));
-		} catch (_) {
-			return null;
-		}
-	}
-
-	private getExtension(mimeType: string): string {
-		const subtype = mimeType.split('/')[1]?.split('+')[0]?.toLowerCase();
-		return subtype === 'jpeg' ? 'jpg' : subtype || 'png';
+	private enqueue(operation: () => Promise<void>): void {
+		this.operationQueue = this.operationQueue
+			.then(operation)
+			.catch((error) => {
+				console.error('CF ImageBed: Excalidraw image upload failed', error);
+			});
 	}
 }

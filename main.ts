@@ -23,7 +23,7 @@ export default class CFImageBedPlugin extends Plugin {
 		// 初始化服务
 		this.uploadService = new UploadService(this.app, this.settings);
 		this.imageHandler = new ImageHandler(this.app, this.uploadService, () => this.settings, this.i18n);
-		this.eventHandlers = new EventHandlers(this.imageHandler, this.i18n);
+		this.eventHandlers = new EventHandlers(this.imageHandler, this.i18n, () => this.settings);
 
 		// 注册事件处理器
 		this.eventHandlers.registerDragAndDropEvents(this);
