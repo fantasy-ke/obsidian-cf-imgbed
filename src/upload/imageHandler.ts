@@ -18,6 +18,28 @@ interface TextReplacement {
 	replacement: string;
 }
 
+export interface UploadImagesInTextOptions {
+	/**
+	 * 是否允许读取 vault 之外的绝对路径图片。手动命令默认允许；
+	 * 自动上云传 false，只处理库内文件，外部写入的笔记里出现本机路径也不会被上传。
+	 */
+	allowAbsolutePaths?: boolean;
+}
+
+export interface UploadImagesInTextResult {
+	content: string;
+	success: number;
+	failed: number;
+	skipped: number;
+	/** 在库内找不到的本地图片引用（可能尚未落盘），供监听器等待图片到达后重跑。 */
+	unresolvedLocal: string[];
+}
+
+type LocalImageSource =
+	| { kind: 'file'; file: File; vaultFile: TFile | null }
+	| { kind: 'skipped-absolute' }
+	| { kind: 'unresolved' };
+
 export class ImageHandler {
     constructor(
         private app: App,
@@ -211,6 +233,92 @@ export class ImageHandler {
 		}
 
 		this.showBatchUploadSummary(successCount, failedCount, skippedCount);
+	}
+
+	/**
+	 * 基于内容的批量上传核心（不依赖编辑器），供自动上云 / 批量迁移复用。
+	 * 传入笔记内容字符串，上传其中可上传的本地/远程图片，返回替换后的新内容与计数。
+	 * 复用与「批量替换当前笔记图片链接」命令完全相同的提取/过滤/上传/替换原语。
+	 */
+	async uploadImagesInText(
+		originalContent: string,
+		sourceFile: TFile | null,
+		sourcePath: string,
+		options: UploadImagesInTextOptions = {}
+	): Promise<UploadImagesInTextResult> {
+		const allowAbsolutePaths = options.allowAbsolutePaths !== false;
+		const { all: allReferences, uploadable: uploadableReferences } = this.selectUploadableReferences(originalContent);
+
+		if (uploadableReferences.length === 0) {
+			return { content: originalContent, success: 0, failed: 0, skipped: 0, unresolvedLocal: [] };
+		}
+
+		const replacements: TextReplacement[] = [];
+		const unresolvedLocal: string[] = [];
+		let successCount = 0;
+		let failedCount = 0;
+		let skippedCount = allReferences.length - uploadableReferences.length;
+
+		for (const reference of uploadableReferences) {
+			let uploadedUrl: string | null;
+			if (reference.isRemote) {
+				uploadedUrl = await this.uploadRemoteImage(reference.path, reference.altText, sourceFile);
+			} else {
+				const source = await this.resolveLocalImageSource(reference, sourcePath, allowAbsolutePaths);
+				if (source.kind === 'skipped-absolute') {
+					skippedCount++;
+					continue;
+				}
+				if (source.kind === 'unresolved') {
+					failedCount++;
+					unresolvedLocal.push(reference.path);
+					continue;
+				}
+				uploadedUrl = await this.uploadService.uploadImage(source.file, {
+					showErrorNotice: false,
+					noteFile: sourceFile
+				});
+			}
+
+			if (!uploadedUrl) {
+				failedCount++;
+				continue;
+			}
+
+			replacements.push({
+				index: reference.index,
+				length: reference.length,
+				replacement: this.buildReplacementForReference(reference, uploadedUrl)
+			});
+			successCount++;
+		}
+
+		return {
+			content: successCount > 0 ? this.applyReplacements(originalContent, replacements) : originalContent,
+			success: successCount,
+			failed: failedCount,
+			skipped: skippedCount,
+			unresolvedLocal
+		};
+	}
+
+	/** 统计一段内容里可上传的图片引用数（不上传），用于批量迁移前的确认。 */
+	countUploadableImages(content: string): number {
+		return this.selectUploadableReferences(content).uploadable.length;
+	}
+
+	/** 提取全部图片引用，并按「网络图片上传」开关和排除域名筛出可上传的那部分。 */
+	private selectUploadableReferences(content: string): { all: ParsedImageReference[]; uploadable: ParsedImageReference[] } {
+		const all = extractMarkdownAndWikiImageReferences(content);
+		const settings = this.getSettings?.();
+		const excludedDomains = this.getExcludedDomains(settings);
+		const uploadable = all.filter((reference) => {
+			if (!reference.isRemote) {
+				return true;
+			}
+			return Boolean(settings?.enableNetworkImageUpload) && !this.isExcludedRemoteUrl(reference.path, excludedDomains);
+		});
+		return { all, uploadable };
 	}
 
 	selectAndUploadImage(): void {
@@ -486,29 +594,58 @@ export class ImageHandler {
 		sourcePath: string,
 		noteFile?: TFile | null
 	): Promise<string | null> {
+		const source = await this.resolveLocalImageSource(reference, sourcePath, true);
+		if (source.kind !== 'file') {
+			return null;
+		}
+		return this.uploadService.uploadImage(source.file, {
+			showErrorNotice: false,
+			noteFile
+		});
+	}
+
+	/**
+	 * 把本地图片引用解析成可上传的 File：优先库内文件；库外绝对路径仅在 allowAbsolutePaths 时读取。
+	 * 路径解码失败按「未解析」处理，不会中断整篇笔记。
+	 */
+	private async resolveLocalImageSource(
+		reference: ParsedImageReference,
+		sourcePath: string,
+		allowAbsolutePaths: boolean
+	): Promise<LocalImageSource> {
 		const localFile = this.resolveLocalFile(reference.path, sourcePath);
 		if (localFile) {
-			const uploadFile = await this.createFileFromTFile(localFile);
-			return this.uploadService.uploadImage(uploadFile, {
-				showErrorNotice: false,
-				noteFile
-			});
+			return { kind: 'file', file: await this.createFileFromTFile(localFile), vaultFile: localFile };
+		}
+
+		if (!allowAbsolutePaths) {
+			return this.isAbsoluteReference(reference.path) ? { kind: 'skipped-absolute' } : { kind: 'unresolved' };
 		}
 
 		const absoluteFile = this.createFileFromAbsolutePath(reference.path);
 		if (absoluteFile) {
-			return this.uploadService.uploadImage(absoluteFile, {
-				showErrorNotice: false,
-				noteFile
-			});
+			return { kind: 'file', file: absoluteFile, vaultFile: null };
 		}
 
 		console.warn(`CF ImageBed: 无法找到本地图片文件，路径: "${reference.path}"，来源文档: "${sourcePath}"`);
-		return null;
+		return { kind: 'unresolved' };
+	}
+
+	private isAbsoluteReference(linkPath: string): boolean {
+		const decoded = this.safeDecode(linkPath.trim()).replace(/^<|>$/g, '');
+		return this.isAbsoluteFileSystemPath(this.normalizeLinkPath(decoded));
+	}
+
+	private safeDecode(value: string): string {
+		try {
+			return decodeURIComponent(value);
+		} catch {
+			return value;
+		}
 	}
 
 	private resolveLocalFile(linkPath: string, sourcePath: string): TFile | null {
-		const decoded = decodeURIComponent(linkPath.trim()).replace(/^<|>$/g, '');
+		const decoded = this.safeDecode(linkPath.trim()).replace(/^<|>$/g, '');
 		const normalizedDecoded = this.normalizeLinkPath(decoded);
 		const mappedVaultPath = this.toVaultRelativePath(normalizedDecoded);
 		const basePath = (mappedVaultPath ?? normalizedDecoded).replace(/^\/+/, '');
@@ -592,7 +729,7 @@ export class ImageHandler {
 			return null;
 		}
 
-		const decoded = decodeURIComponent(linkPath.trim()).replace(/^<|>$/g, '');
+		const decoded = this.safeDecode(linkPath.trim()).replace(/^<|>$/g, '');
 		const normalizedPath = this.normalizeLinkPath(decoded);
 		if (!this.isAbsoluteFileSystemPath(normalizedPath)) {
 			return null;

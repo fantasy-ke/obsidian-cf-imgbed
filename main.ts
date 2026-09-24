@@ -3,6 +3,7 @@ import { CFImageBedSettings, DEFAULT_SETTINGS } from './src/types';
 import { UploadService } from './src/upload/uploadService';
 import { ImageHandler } from './src/upload/imageHandler';
 import { EventHandlers } from './src/events/eventHandlers';
+import { AutoUploadWatcher } from './src/events/autoUploadWatcher';
 import { CFImageBedSettingTab } from './src/settings/settingsTab';
 import { I18n, resolveLanguage } from './src/utils/i18n';
 import { parseDomainList } from './src/utils/domainUtils';
@@ -12,6 +13,7 @@ export default class CFImageBedPlugin extends Plugin {
 	private uploadService: UploadService;
 	private imageHandler: ImageHandler;
 	private eventHandlers: EventHandlers;
+	private autoUploadWatcher: AutoUploadWatcher;
 	private i18n: I18n;
 
 	async onload() {
@@ -30,6 +32,20 @@ export default class CFImageBedPlugin extends Plugin {
 		this.eventHandlers.registerPasteEvents(this);
 		this.eventHandlers.registerExcalidrawEvents(this);
 		this.eventHandlers.registerEditorMenuEvents(this);
+
+		// 图片自动上云监听器：监听笔记改动，把图片转存到图床并改写链接。
+		// 在 onLayoutReady 之后再注册（避免启动时的全库 create 事件风暴），随后对监听范围补扫一次。
+		this.autoUploadWatcher = new AutoUploadWatcher(this, this.imageHandler, () => this.settings, this.i18n);
+		this.app.workspace.onLayoutReady(() => this.autoUploadWatcher.register());
+
+		// 手动：扫描监听范围（未配置时为整个库）内的现有笔记，确认后批量迁移图片
+		this.addCommand({
+			id: 'scan-and-migrate-images',
+			name: this.i18n.t('commands.scanAndMigrateImages'),
+			callback: () => {
+				void this.autoUploadWatcher.scanAndMigrate();
+			}
+		});
 
 		// 移动端专用命令：支持相机拍照和相册选择
 		this.addCommand({
@@ -58,7 +74,8 @@ export default class CFImageBedPlugin extends Plugin {
 	}
 
 	onunload() {
-
+		// 取消所有待处理任务；已在途的上传结果不再写回文件
+		this.autoUploadWatcher?.unload();
 	}
 
 

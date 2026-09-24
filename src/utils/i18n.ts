@@ -156,6 +156,24 @@ const translations: Record<Language, Translations> = {
 					name: '接管 Excalidraw 图片上传',
 					desc: '开启后，粘贴、拖拽或插入到 Excalidraw 的图片将上传到当前图床；关闭后由 Excalidraw 原生处理'
 				},
+				enableAutoUpload: {
+					name: '图片自动上云',
+					desc: '监听笔记改动（无法区分外部写入与编辑器保存，AI 经 CLI 写文件、Web Clip 存网页、你在编辑器里保存都会触发），自动把笔记中的库内图片和远程图片转存到图床并改写链接。只处理库内图片，不读取库外绝对路径；远程图片还需开启“启用网络图片上传”。需 Obsidian 处于运行状态，每次启动会对监听范围补扫一次'
+				},
+				autoUploadFolders: {
+					name: '自动上云 · 监听文件夹',
+					desc: '逗号分隔的库内文件夹（如 clippings, inbox），建议填 AI CLI / Web Clipper 的落点目录。留空且未开启“监听整个库”时不会自动处理任何笔记',
+					placeholder: 'clippings, inbox'
+				},
+				autoUploadWholeVault: {
+					name: '自动上云 · 监听整个库',
+					desc: '⚠ 开启后库中所有 Markdown 笔记的每次保存都会触发处理，包括你在编辑器里的每一次修改；启动时也会补扫全库。仅当你确实希望库中不保留任何本地图片时开启。开启后“监听文件夹”被忽略'
+				},
+				autoUploadDebounceMs: {
+					name: '自动上云 · 防抖（毫秒）',
+					desc: '文件停止改动多久后再处理，避免处理写到一半的内容。默认 2000，最小 500。处理中再次改动会在本轮结束后自动重跑',
+					placeholder: '2000'
+				},
 				excludedImageDomains: {
 					name: '网络图片排除域名',
 					desc: '这些域名的图片链接不会重复上传，支持逗号或换行分隔。当前 API URL 域名会自动加入排除列表',
@@ -201,7 +219,18 @@ const translations: Record<Language, Translations> = {
 		},
 		commands: {
 			uploadImageMobile: '📷 拍照或相册选择',
-			uploadCurrentNoteImages: '上传当前文档所有图片到 CF ImageBed'
+			uploadCurrentNoteImages: '上传当前文档所有图片到 CF ImageBed',
+			scanAndMigrateImages: '扫描并迁移图片到 CF ImageBed（按自动上云范围）'
+		},
+		autoUpload: {
+			scopeWholeVault: '整个库',
+			scopeFolders: '文件夹 {folders}',
+			scanConfirmTitle: '扫描并迁移图片',
+			scanConfirmMessage: '范围：{scope}\n共 {notes} 篇笔记、{images} 张图片待转存。\n转存会上传图片并改写笔记中的链接，失败的引用保持原样。是否继续？',
+			scanNothing: '范围「{scope}」内没有待转存的图片',
+			scanQueued: '已排队 {notes} 篇笔记，处理进度见通知',
+			confirm: '开始迁移',
+			cancel: '取消'
 		},
 		menu: {
 			uploadImage: '上传图片到 CF ImageBed'
@@ -220,6 +249,7 @@ const translations: Record<Language, Translations> = {
 			noUploadableImages: '当前文档没有可上传的图片',
 			uploadingCurrentNoteImages: '正在上传当前文档中的 {count} 张图片...',
 			documentChangedSkipReplace: '文档内容已变化，本次未自动替换链接',
+			autoUploadSummary: 'CF ImageBed：已自动转存 {count} 张图片 → {file}',
 			checkFileSystemPermission: '请检查浏览器权限设置，允许访问文件系统',
 			uploadingImage: '正在上传图片...',
 			uploadSuccess: '图片上传成功：{url}',
@@ -411,6 +441,24 @@ const translations: Record<Language, Translations> = {
 					name: 'Handle Excalidraw image uploads',
 					desc: 'When enabled, images pasted, dropped, or inserted into Excalidraw are uploaded to the current image bed. When disabled, Excalidraw handles them normally.'
 				},
+				enableAutoUpload: {
+					name: 'Auto-upload images to the cloud',
+					desc: 'Watch note changes (external writes such as AI via CLI or a web clipper cannot be told apart from editor saves, so both are handled) and automatically upload the vault images and remote images in a note to the image bed, rewriting the links. Only vault files are read; absolute paths outside the vault are skipped. Remote images also need “Enable remote image upload”. Requires Obsidian to be running; the watched scope is re-scanned once on every startup.'
+				},
+				autoUploadFolders: {
+					name: 'Auto-upload · watched folders',
+					desc: 'Comma-separated vault folders (e.g. clippings, inbox); ideally the landing folder of your AI CLI / web clipper. When empty and “watch the whole vault” is off, no note is processed automatically.',
+					placeholder: 'clippings, inbox'
+				},
+				autoUploadWholeVault: {
+					name: 'Auto-upload · watch the whole vault',
+					desc: '⚠ Every save of every Markdown note in the vault triggers processing, including each edit you make in the editor; the whole vault is also re-scanned on startup. Enable only if you really want no local images left in the vault. Overrides “watched folders”.'
+				},
+				autoUploadDebounceMs: {
+					name: 'Auto-upload · debounce (ms)',
+					desc: 'How long to wait after the last change before processing, so half-written content is never touched. Default 2000, minimum 500. A change made while a note is being processed re-runs it afterwards.',
+					placeholder: '2000'
+				},
 				excludedImageDomains: {
 					name: 'Excluded remote domains',
 					desc: 'Images from these domains will not be uploaded again. Separate domains with commas or new lines. The current API URL domain is always excluded automatically.',
@@ -456,7 +504,18 @@ const translations: Record<Language, Translations> = {
 		},
 		commands: {
 			uploadImageMobile: '📷 Take photo or choose from gallery',
-			uploadCurrentNoteImages: 'Upload current note images to CF ImageBed'
+			uploadCurrentNoteImages: 'Upload current note images to CF ImageBed',
+			scanAndMigrateImages: 'Scan and migrate images to CF ImageBed (auto-upload scope)'
+		},
+		autoUpload: {
+			scopeWholeVault: 'whole vault',
+			scopeFolders: 'folders {folders}',
+			scanConfirmTitle: 'Scan and migrate images',
+			scanConfirmMessage: 'Scope: {scope}\n{notes} note(s) with {images} image(s) to migrate.\nImages will be uploaded and the links in the notes rewritten; references that fail are left untouched. Continue?',
+			scanNothing: 'No images to migrate in scope “{scope}”',
+			scanQueued: 'Queued {notes} note(s); progress is shown as notices',
+			confirm: 'Start migration',
+			cancel: 'Cancel'
 		},
 		menu: {
 			uploadImage: 'Upload image to CF ImageBed'
@@ -475,6 +534,7 @@ const translations: Record<Language, Translations> = {
 			noUploadableImages: 'No uploadable images found in the current note',
 			uploadingCurrentNoteImages: 'Uploading {count} images from the current note...',
 			documentChangedSkipReplace: 'The note content changed, so links were not replaced automatically',
+			autoUploadSummary: 'CF ImageBed: auto-uploaded {count} image(s) → {file}',
 			checkFileSystemPermission: 'Please check browser permissions and allow file system access',
 			uploadingImage: 'Uploading image...',
 			uploadSuccess: 'Image uploaded successfully: {url}',
