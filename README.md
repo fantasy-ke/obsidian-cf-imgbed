@@ -221,7 +221,30 @@ An image upload plugin for Obsidian that uploads images to CloudFlare ImgBed. It
 ## 版本更新历史
 
 <details>
-<summary><strong>v1.0.9 (最新版本)</strong></summary>
+<summary><strong>v1.0.11 (最新版本)</strong></summary>
+
+### 新功能
+- feat: 新增「图片自动上云」。监听指定文件夹或整个库的笔记改动，自动把库内图片转存到图床并改写链接，默认关闭
+- feat: 新增命令「扫描并迁移图片到 CF ImageBed」，确认后按监听范围批量迁移；未配置范围时按整个库处理并在对话框中说明
+
+### 说明
+- 适合 AI CLI 写笔记、Web Clipper 剪藏，以及希望库内不保留本地图片的场景
+- 未填写监听文件夹且未开启「监听整个库」时，不会自动处理任何笔记
+- 自动模式不读取库外绝对路径；网络图片仍需开启「启用网络图片上传」
+- 每次启动会对已配置的监听范围补扫一次。若使用了自定义返回链接前缀，请把该域名加入「网络图片排除域名」，避免补扫时重复上传
+
+</details>
+
+<details>
+<summary><strong>v1.0.10</strong></summary>
+
+### 新功能
+- feat: 支持 Excalidraw 图片上传
+
+</details>
+
+<details>
+<summary><strong>v1.0.9</strong></summary>
 
 ### 新功能
 - feat: 新增 `webdav` 上传渠道
